@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: ml-supply-chain-pipeline
@@ -33,6 +33,7 @@ spec:
     - name: fetch-source
       taskRef:
         name: git-clone
+        kind: Task
       workspaces:
         - name: output
           workspace: shared-workspace
@@ -47,6 +48,7 @@ spec:
         - fetch-source
       taskRef:
         name: model-training-task
+        kind: Task
       workspaces:
         - name: source
           workspace: shared-workspace
