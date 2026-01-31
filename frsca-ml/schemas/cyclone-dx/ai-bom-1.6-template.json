@@ -1,0 +1,69 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-04-27T12:00:00Z",
+    "component": {
+      "type": "application",
+      "name": "FRSCA-ML Pipeline Output",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "machine-learning-model",
+      "name": "example-model",
+      "version": "v1",
+      "bom-ref": "model-1",
+      "purl": "pkg:mlflow/example-model@v1?repository_url=s3://models/example-model",
+      "modelCard": {
+        "modelParameters": {
+          "approach": {
+            "type": "supervised"
+          },
+          "task": "classification",
+          "architectureFamily": "neural-network",
+          "modelArchitecture": "simple-feed-forward",
+          "datasets": [
+            {
+              "type": "dataset",
+              "name": "training-data",
+              "contents": {
+                "url": "s3://datalake/train.csv"
+              },
+              "classification": "public"
+            }
+          ]
+        },
+        "quantitativeAnalysis": {
+          "performanceMetrics": [
+            {
+              "type": "accuracy",
+              "value": "0.92"
+            },
+            {
+              "type": "loss",
+              "value": "0.15"
+            }
+          ]
+        },
+        "considerations": {
+          "ethicalConsiderations": [
+            {
+              "name": "Bias Mitigation",
+              "mitigationStrategy": "Data re-sampling to ensure class balance."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "library",
+      "name": "pytorch",
+      "version": "2.1.0",
+      "purl": "pkg:pypi/torch@2.1.0"
+    }
+  ]
+}

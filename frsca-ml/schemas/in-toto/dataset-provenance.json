@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://frsca.dev/provenance/dataset/v1",
+  "title": "FRSCA-ML Dataset Provenance Predicate",
+  "description": "in-toto predicate for Dataset verification and provenance.",
+  "type": "object",
+  "properties": {
+    "predicateType": {
+      "type": "string",
+      "const": "https://frsca.dev/provenance/dataset/v1"
+    },
+    "predicate": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "uri": { "type": "string", "format": "uri" },
+            "digest": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "Cryptographic digest of the dataset (e.g., sha256)."
+            }
+          },
+          "required": ["uri", "digest"]
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "verifiedOn": { "type": "string", "format": "date-time" },
+            "verifier": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "required": ["dataset"]
+    }
+  },
+  "required": ["predicateType", "predicate"]
+}

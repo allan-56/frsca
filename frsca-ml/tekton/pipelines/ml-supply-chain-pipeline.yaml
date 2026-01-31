@@ -1,0 +1,60 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ml-supply-chain-pipeline
+spec:
+  description: >-
+    A secure ML supply chain pipeline that fetches code,
+    verifies data provenance, trains a model, and attests the results.
+
+  workspaces:
+    - name: shared-workspace
+      description: Workspace to hold source code and artifacts.
+
+  params:
+    - name: git-url
+      type: string
+      description: Source code repository URL.
+    - name: git-revision
+      type: string
+      description: Git revision to checkout.
+      default: "main"
+    - name: dataset-url
+      type: string
+      description: Location of the training dataset.
+    - name: hyperparameters
+      type: string
+      default: '{"epochs": 5, "lr": 0.01}'
+    - name: context-dir
+      type: string
+      default: "frsca-ml"
+
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+        kind: ClusterTask # or Task, depending on install
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    - name: train-model
+      runAfter:
+        - fetch-source
+      taskRef:
+        name: model-training-task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: dataset-url
+          value: $(params.dataset-url)
+        - name: hyperparameters
+          value: $(params.hyperparameters)
+        - name: context-dir
+          value: $(params.context-dir)
