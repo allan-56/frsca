@@ -16,27 +16,27 @@ spec:
     - name: verify-ml-provenance
       match:
         any:
-        - resources:
-            kinds:
-              - InferenceService
-            apiGroups:
-              - serving.kserve.io
+          - resources:
+              kinds:
+                - InferenceService
+              apiGroups:
+                - serving.kserve.io
       verifyImages:
-      - imageReferences:
-        - "registry.example.com/models/*"
-        attestations:
-        - predicateType: https://frsca.dev/provenance/ml-training/v0.2
-          conditions:
-          - all:
-            - key: "{{ predicate.mlSpecifics.metrics.accuracy }}"
-              operator: GreaterThan
-              value: 0.85
-      - imageReferences:
-        - "registry.example.com/models/*"
-        attestations:
-        - predicateType: https://cyclonedx.org/bom
-          conditions:
-          - all:
-            - key: "{{ predicate.components[?type=='machine-learning-model'] | length(@) }}"
-              operator: GreaterThan
-              value: 0
+        - imageReferences:
+            - "registry.example.com/models/*"
+          attestations:
+            - predicateType: https://frsca.dev/provenance/ml-training/v0.2
+              conditions:
+                - all:
+                    - key: "{{ predicate.mlSpecifics.metrics.accuracy }}"
+                      operator: GreaterThan
+                      value: 0.85
+        - imageReferences:
+            - "registry.example.com/models/*"
+          attestations:
+            - predicateType: https://cyclonedx.org/bom
+              conditions:
+                - all:
+                    - key: "{{ predicate.components[?type=='machine-learning-model'] | length(@) }}"
+                      operator: GreaterThan
+                      value: 0

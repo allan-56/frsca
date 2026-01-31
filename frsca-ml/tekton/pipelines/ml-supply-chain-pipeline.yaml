@@ -33,8 +33,6 @@ spec:
     - name: fetch-source
       taskRef:
         name: git-clone
-        kind: ClusterTask
-        apiVersion: tekton.dev/v1beta1
       workspaces:
         - name: output
           workspace: shared-workspace
