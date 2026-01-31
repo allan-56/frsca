@@ -14,6 +14,8 @@ from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.output import OutputFormat
 from cyclonedx.output.json import JsonV1Dot6
 from packageurl import PackageURL
+import boto3
+from urllib.parse import urlparse
 
 # Pydantic Models for Input Validation
 class Hyperparameters(BaseModel):
@@ -34,9 +36,33 @@ def calculate_sha256(filepath: str) -> str:
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
 
-def simulate_training() -> Dict[str, float]:
+def download_s3_dataset(url: str, dest_dir: str) -> str:
+    """Downloads a dataset from S3 if valid, else returns None."""
+    parsed = urlparse(url)
+    if parsed.scheme != "s3":
+        return None
+
+    bucket = parsed.netloc
+    key = parsed.path.lstrip('/')
+    filename = os.path.basename(key) or "dataset.file"
+    dest_path = os.path.join(dest_dir, filename)
+
+    print(f"Downloading s3://{bucket}/{key} to {dest_path}...")
+
+    # Use generic botocore/boto3 client.
+    # In a container, it will use env vars or IAM roles.
+    # In testcontainers, endpoint_url might be needed if using MinIO.
+
+    # We allow overriding endpoint URL via env var for testing (MinIO)
+    endpoint_url = os.environ.get("AWS_ENDPOINT_URL", None)
+
+    s3 = boto3.client("s3", endpoint_url=endpoint_url)
+    s3.download_file(bucket, key, dest_path)
+    return dest_path
+
+def simulate_training(dataset_path: str = None) -> Dict[str, float]:
     """Simulates a training run and returns metrics."""
-    print("Simulating training...")
+    print(f"Training on dataset: {dataset_path if dataset_path else 'MOCK'}")
     time.sleep(1) # Fake work
     # Generate random metrics > 0.8
     accuracy = 0.8 + (random.random() * 0.19)
@@ -102,17 +128,29 @@ def main():
 
     os.makedirs(config.output_dir, exist_ok=True)
 
-    # 1. Simulate Training
-    metrics = simulate_training()
+    # 1. Fetch Dataset (if S3)
+    dataset_file = None
+    if config.dataset_url.startswith("s3://"):
+        try:
+            dataset_file = download_s3_dataset(config.dataset_url, config.output_dir)
+        except Exception as e:
+            print(f"Warning: Failed to download dataset: {e}")
+            # Fallback to simulation if download fails (for resilience in mock envs)
 
-    # 2. Generate Model Artifact
+    # 2. Simulate Training
+    metrics = simulate_training(dataset_file)
+
+    # 3. Generate Model Artifact
     model_path = os.path.join(config.output_dir, "model.pt")
     with open(model_path, "wb") as f:
         f.write(b"FAKE MODEL CONTENT " + str(metrics).encode())
+        if dataset_file:
+             # Embed dataset hash into model for proof of lineage
+             f.write(b"\nDatasetHash: " + calculate_sha256(dataset_file).encode())
 
     model_digest = calculate_sha256(model_path)
 
-    # 3. Generate BOM
+    # 4. Generate BOM
     bom = create_ai_bom(config, metrics, model_digest)
     output_formatter = JsonV1Dot6(bom)
     bom_json_str = output_formatter.output_as_string()
