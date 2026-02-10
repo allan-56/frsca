@@ -1,160 +1,136 @@
-<!--
- Copyright 2018 The CUE Authors
+# FRSCA
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+[![Build status](https://github.com/buildsec/frsca/workflows/CI/badge.svg)](https://github.com/buildsec/frsca/actions)
+![All Examples](https://github.com/buildsec/frsca/actions/workflows/all-examples.yaml/badge.svg)
+[![OpenSSF
+-Scorecard](https://api.securityscorecards.dev/projects/github.com/buildsec/frsca/badge)](https://api.securityscorecards.dev/projects/github.com/buildsec/frsca)
 
-     http://www.apache.org/licenses/LICENSE-2.0
+<p align="center">
+<img src="https://buildsec.github.io/frsca/img/frsca_mascot-color.png"
+  alt="frsca logo" width="200"></img>
+</p>
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
--->
+## About The Project
 
-# The CUE Data Constraint Language
+Factory for Repeatable Secure Creation of Artifacts (aka FRSCA pronounced
+Fresca) aims to help secure the supply chain by securing build pipelines.
 
-[![Go Reference](https://pkg.go.dev/badge/cuelang.org/go.svg)](https://pkg.go.dev/cuelang.org/go)
-[![Github](https://github.com/cue-lang/cue/actions/workflows/trybot.yml/badge.svg)](https://github.com/cue-lang/cue/actions/workflows/trybot.yml?query=branch%3Amaster+event%3Apush)
-[![GolangCI](https://golangci.com/badges/github.com/cue-lang/cue.svg)](https://golangci.com/r/github.com/cue-lang/cue)
-[![Go 1.20+](https://img.shields.io/badge/go-1.20-9cf.svg)](https://golang.org/dl/)
-[![platforms](https://img.shields.io/badge/platforms-linux|windows|macos-inactive.svg)](https://cuelang.org/docs/install/)
+It achieves its goals by being 2 things:
 
-*Configure, Unify, Execute*
+1. A suite of build, pipeline, signing, visibility, identity, and policy tools
+   configured to operate securely.
+2. A set of build pipeline abstractions and definitions with security guardrails
+   ensuring all builds follow supply chain security best practices.
 
-CUE is an open source data constraint language which aims
-to simplify tasks involving defining and using data.
+At its core FRSCA uses these projects to achieve its goals:
 
-It is a superset of JSON,
-allowing users familiar with JSON to get started quickly.
+- [Kubernetes] - For control plane
+- [Tekton Pipelines] - For build pipelines
+- [Tekton Chains] - For pipeline task observation
+- [Sigstore] - For signing software, attestations, SBOMs and other metadata
+- [SPIFFE/Spire] - For build workload identities
+- [Vault] - For secrets management
+- [Helm] and [CUE] - For provisioning kubernetes resources
+- [CUE] - For secure pipeline abstractions and definitions
 
-## What is it for?
+See:
+[Architecture Docs](https://buildsec.github.io/frsca/docs/getting-started/architecture/)
+for more info
 
-You can use CUE to
+FRSCA is also an implementation of the CNCF's
+[Secure Software Factory Reference Architecture](https://github.com/cncf/tag-security/blob/main/community/working-groups/supply-chain-security/supply-chain-security-paper/CNCF_SSCP_v1.pdf)
+which is based on the CNCF's
+[Software Supply Chain Best Practices White Paper](https://github.com/cncf/tag-security/blob/main/community/working-groups/supply-chain-security/supply-chain-security-paper/CNCF_SSCP_v1.pdf).
+It is also intended to follow [SLSA](https://slsa.dev) requirements closely and
+generate in-toto attesttations for SLSA provenance predicates.
 
-- define a detailed validation schema for your data (manually or automatically
-  from data)
-- reduce boilerplate in your data (manually or automatically from schema)
-- extract a schema from code
-- generate type definitions and validation code
-- merge JSON in a principled way
-- define and run declarative scripts
+_NOTE_: FRSCA is under very active development. A lot will change, it isn't
+production ready yet.
 
-## How?
+## Quickstart
 
-CUE merges the notion of schema and data.
-The same CUE definition can simultaneously be used for validating data
-and act as a template to reduce boilerplate.
-Schema definition is enriched with fine-grained value definitions
-and default values.
-At the same time,
-data can be simplified by removing values implied by such detailed definitions.
-The merging of these two concepts enables
-many tasks to be handled in a principled way.
-
-Constraints provide a simple and well-defined, yet powerful, alternative
-to inheritance,
-a common source of complexity with configuration languages.
-
-## CUE Scripting
-
-The CUE scripting layer defines declarative scripting, expressed in CUE,
-on top of data.
-This solves three problems:
-working around the closedness of CUE definitions (we say CUE is hermetic),
-providing an easy way to share common scripts and workflows for using data,
-and giving CUE the knowledge of how data is used to optimize validation.
-
-There are many tools that interpret data or use a specialized language for
-a specific domain (Kustomize, Ksonnet).
-This solves dealing with data on one level, but the problem it solves may repeat
-itself at a higher level when integrating other systems in a workflow.
-CUE scripting is generic and allows users to define any workflow.
-
-## Tooling
-
-CUE is designed for automation.
-Some aspects of this are:
-
-- convert existing YAML and JSON
-- automatically simplify configurations
-- rich APIs designed for automated tooling
-- formatter
-- arbitrary-precision arithmetic
-- generate CUE templates from source code
-- generate source code from CUE definitions (TODO)
-
-## Download and Install
-
-### Release builds
-
-[Download](https://github.com/cue-lang/cue/releases) the latest release from
-GitHub.
-
-### Install using Homebrew
-
-Using [Homebrew](https://brew.sh), you can install using the CUE Homebrew tap:
+To quickly provision a Minikube cluster with FRSCA deployed and run an example
+pipeline run:
 
 ```bash
-brew install cue-lang/tap/cue
+# Install and setup minikube (run only if need a local k8s)
+make setup-minikube
+make setup-frsca
 ```
 
-### Install from Source
+This will perform the following actions:
 
-<!-- Keep the following in sync with cmd/cue/cmd/testdata/script/install*.txtar -->
+1. Install and setup minikube, and supporting cli tools, like `cosign` and `jq`
+   if they are not already installed.
+1. Install development tooling to simulate a production environment, which
+   includes:
+   1. [Cert-manager]
+   1. [registry]
+   1. [SPIFFE/Spire]
+   1. [Vault]
+1. Install and setup FRSCA's components which include:
+   1. [Tekton Pipelines]
+   1. [Tekton Chains]
+   1. [Kyverno]
+1. Setup a mirror of example repositories and tekton triggers for each mirror.
 
-To install the `cue` command line tool, run:
+Once FRSCA has been installed you can follow the various examples under
+`/examples`.
+
+Tearing down the Minikube cluster generated in the quickstart, simply run:
 
 ```bash
-go install cuelang.org/go/cmd/cue@latest
+make teardown
 ```
 
-For more details, see [Installing CUE](./doc/install.md).
+## Going further
 
-## Learning CUE
+The full documentation is available at <https://buildsec.github.io/frsca/>
 
-The fastest way to learn the basics is to follow the
-[tutorial on basic language constructs](./doc/tutorial/basics/Readme.md).
+## Community
 
-A more elaborate tutorial demonstrating how to convert and restructure
-an existing set of Kubernetes configurations is available in
-[written form](./doc/tutorial/kubernetes/README.md).
+It is a project under the [OpenSSF](https://openssf.org/)
+[Supply Chain Integrity Working Group](https://github.com/ossf/wg-supply-chain-integrity).
 
-## References
+Community meetings every other Wednesday at 10AM Eastern - See OpenSSF
+[community calendar][calendar]
+for more info.
 
-- [Language Specification](./doc/ref/spec.md): official CUE Language
-  specification.
+Slack channel: #frsca on [OpenSSF slack](https://slack.openssf.org/)
 
-- [API](https://pkg.go.dev/cuelang.org/go/cue): the API on pkg.go.dev
+### Built With
 
-- [Builtin packages](https://pkg.go.dev/cuelang.org/go/pkg): builtins available
-  from CUE programs
+Platform:
 
-- [`cue` Command line reference](./doc/cmd/cue.md): the `cue` command
+- [Kyverno]
+- [Kubernetes]
+- [Tekton Pipelines]
+- [Tekton Chains]
+- [SPIFFE/Spire]
+- [Vault]
 
-## Contributing
+Tooling:
 
-To contribute, please read the [Contribution Guide](CONTRIBUTING.md).
+- [Cosign/Sget]
+- [Crane]
+- [Cue]
+- [Make]
+- [Rekor CLI]
+- [Helm]
 
-## Code of Conduct
-
-Guidelines for participating in CUE community spaces and a reporting process for
-handling issues can be found in the [Code of
-Conduct](https://cuelang.org/docs/contribution_guidelines/conduct).
-
-## Contact
-
-You can get in touch with the cuelang community in the following ways:
-
-- Ask questions via [GitHub Discussions](https://github.com/cue-lang/cue/discussions)
-- Chat with us on our [Slack workspace](https://join.slack.com/t/cuelang/shared_invite/enQtNzQwODc3NzYzNTA0LTAxNWQwZGU2YWFiOWFiOWQ4MjVjNGQ2ZTNlMmIxODc4MDVjMDg5YmIyOTMyMjQ2MTkzMTU5ZjA1OGE0OGE1NmE).
-- Subscribe to our [Community Calendar](https://cuelang.org/s/community-calendar) for community calls, demos, office hours, etc
-
----
-
-Unless otherwise noted, the CUE source files are distributed
-under the Apache 2.0 license found in the LICENSE file.
-
-This is not an officially supported Google product.
+[tekton chains]: https://github.com/tektoncd/chains
+[tekton pipelines]: https://tekton.dev/
+[kyverno]: https://kyverno.io/
+[kubernetes]: https://k8s.io/
+[spiffe/spire]: https://spiffe.io/
+[cosign/sget]: https://github.com/sigstore/cosign
+[crane]: https://github.com/google/go-containerregistry
+[cue]: https://cuelang.org/
+[make]: https://www.gnu.org/software/make/
+[rekor cli]: https://github.com/sigstore/rekor
+[vault]: https://www.vaultproject.io/
+[helm]: https://helm.sh/
+[sigstore]: https://www.sigstore.dev/
+[cert-manager]: https://cert-manager.io/
+[registry]: https://hub.docker.com/_/registry
+[calendar]: https://calendar.google.com/calendar/u/0?cid=czYzdm9lZmhwNWk5cGZsdGI1cTY3bmdwZXNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ
