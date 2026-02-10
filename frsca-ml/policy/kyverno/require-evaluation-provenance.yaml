@@ -1,0 +1,34 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-evaluation-provenance
+  annotations:
+    policies.kyverno.io/title: Require Model Evaluation
+    policies.kyverno.io/subject: InferenceService, Pod
+    policies.kyverno.io/description: >-
+      Ensures that any deployed model has a valid evaluation attestation
+      indicating it passed the evaluation with acceptable metrics.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: verify-evaluation-metrics
+      match:
+        any:
+          - resources:
+              kinds:
+                - InferenceService
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "registry.example.com/models/*"
+          attestations:
+            - predicateType: https://frsca.dev/provenance/ml-evaluation/v0.1
+              conditions:
+                - all:
+                    - key: "{{ predicate.evaluationSpecifics.passed }}"
+                      operator: Equals
+                      value: true
+                    - key: "{{ predicate.evaluationSpecifics.metrics.accuracy }}"
+                      operator: GreaterThan
+                      value: 0.85

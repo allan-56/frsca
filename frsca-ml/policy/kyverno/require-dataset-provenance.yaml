@@ -1,0 +1,31 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-dataset-provenance
+  annotations:
+    policies.kyverno.io/title: Require Approved Datasets
+    policies.kyverno.io/subject: InferenceService, Pod
+    policies.kyverno.io/description: >-
+      Ensures that the model being deployed was trained using only
+      datasets from an approved list.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: verify-dataset-whitelist
+      match:
+        any:
+          - resources:
+              kinds:
+                - InferenceService
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "registry.example.com/models/*"
+          attestations:
+            - predicateType: https://frsca.dev/provenance/ml-training/v0.2
+              conditions:
+                - all:
+                    - key: "{{ predicate.mlSpecifics.datasets[0].uri }}"
+                      operator: PatternMatch
+                      value: "s3://approved-data-bucket/*"

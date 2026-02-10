@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: model-training-task
   labels:
-    app.kubernetes.io/version: "0.1"
+    app.kubernetes.io/version: "0.2"
   annotations:
     tekton.dev/pipelines.minVersion: "0.12.1"
     tekton.dev/tags: ml, training, frsca
@@ -20,7 +20,10 @@ spec:
   params:
     - name: dataset-url
       type: string
-      description: The URI of the training dataset (e.g., s3://bucket/data.csv).
+      description: The URI of the training dataset (or feature view source).
+    - name: feature-view-id
+      type: string
+      description: The ID of the feature view to train on.
     - name: hyperparameters
       type: string
       description: JSON string or path to hyperparameters file.
@@ -35,45 +38,31 @@ spec:
       description: The SHA256 digest of the trained model artifact.
     - name: TRAINING_METRICS
       description: JSON object containing validation metrics (accuracy, loss).
-    - name: AI_BOM_URI
-      description: The URI where the generated AI-BOM is stored (or the BOM content itself if small).
-    # Hints for Tekton Chains
-    - name: MODEL_URL
-      description: The URL of the model artifact.
+    - name: ATTESTATION_URI
+      description: The URI where the generated attestation is stored.
 
   steps:
     - name: train-model
-      image: python:3.9-slim
+      image: python:3.12-slim
       workingDir: $(workspaces.source.path)
       script: |
         #!/bin/bash
         set -e
 
-        CONTEXT_DIR=$(params.context-dir)
+        CONTEXT_DIR=$(workspaces.source.path)/$(params.context-dir)
+        SRC_DIR="${CONTEXT_DIR}/src"
         REQUIREMENTS_PATH="${CONTEXT_DIR}/src/provenance_generator/requirements.txt"
-        SCRIPT_PATH="${CONTEXT_DIR}/src/provenance_generator/main.py"
 
-        echo "Using Context Dir: ${CONTEXT_DIR}"
-
-        # Install dependencies (in a real world, use a pre-built image)
+        echo "Installing dependencies..."
         if [ -f "${REQUIREMENTS_PATH}" ]; then
           pip install -r "${REQUIREMENTS_PATH}"
-        else
-          echo "Requirements file not found at ${REQUIREMENTS_PATH}, skipping install."
         fi
 
-        if [ ! -f "${SCRIPT_PATH}" ]; then
-          echo "Error: Script not found at ${SCRIPT_PATH}"
-          ls -R
-          exit 1
-        fi
+        export PYTHONPATH=$PYTHONPATH:${SRC_DIR}
 
-        # Run the training script
-        # We assume the script handles the logic and writes to /tekton/results
-        python3 "${SCRIPT_PATH}" \
+        echo "Running Training..."
+        python3 -m provenance_generator.main train \
           --dataset-url "$(params.dataset-url)" \
+          --feature-view-id "$(params.feature-view-id)" \
           --hyperparameters '$(params.hyperparameters)' \
-          --output-dir $(workspaces.source.path)/outputs
-
-        # The python script is responsible for populating /tekton/results/MODEL_DIGEST, etc.
-        # But we can also do some glue logic here if needed.
+          --output-dir $(workspaces.source.path)/outputs/train

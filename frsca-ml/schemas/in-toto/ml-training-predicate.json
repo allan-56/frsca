@@ -81,6 +81,17 @@
                 },
                 "required": ["name", "uri", "digest"]
               }
+            },
+            "featureViews": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "uri": { "type": "string" }
+                },
+                "required": ["id"]
+              }
             }
           },
           "required": ["hyperparameters", "environment", "metrics", "datasets"]

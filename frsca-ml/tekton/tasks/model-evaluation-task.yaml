@@ -1,0 +1,60 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: model-evaluation-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/tags: ml, evaluation, frsca
+spec:
+  description: >-
+    Evaluates a trained model against an evaluation dataset.
+
+  workspaces:
+    - name: source
+      description: Workspace containing the source code.
+
+  params:
+    - name: model-digest
+      type: string
+      description: The SHA256 digest of the model artifact.
+    - name: evaluation-data-url
+      type: string
+      description: The URI of the evaluation dataset.
+    - name: context-dir
+      type: string
+      default: "."
+
+  results:
+    - name: EVALUATION_METRICS
+      description: JSON object containing evaluation metrics.
+    - name: PASSED
+      description: Boolean indicating if the evaluation passed.
+    - name: ATTESTATION_URI
+      description: URI of the generated evaluation attestation.
+
+  steps:
+    - name: evaluate-model
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+
+        CONTEXT_DIR=$(workspaces.source.path)/$(params.context-dir)
+        SRC_DIR="${CONTEXT_DIR}/src"
+        REQUIREMENTS_PATH="${CONTEXT_DIR}/src/provenance_generator/requirements.txt"
+
+        echo "Installing dependencies..."
+        if [ -f "${REQUIREMENTS_PATH}" ]; then
+          pip install -r "${REQUIREMENTS_PATH}"
+        fi
+
+        export PYTHONPATH=$PYTHONPATH:${SRC_DIR}
+
+        echo "Running Evaluation..."
+        python3 -m provenance_generator.main evaluate \
+          --model-digest "$(params.model-digest)" \
+          --evaluation-data-url "$(params.evaluation-data-url)" \
+          --output-dir $(workspaces.source.path)/outputs/evaluate
