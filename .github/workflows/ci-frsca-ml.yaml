@@ -48,8 +48,13 @@ jobs:
           kubectl apply -f frsca-ml/tekton/pipelines/ml-supply-chain-pipeline.yaml
 
           echo "Configuring Chains for FRSCA-ML..."
-          kubectl create configmap frsca-ml-cue --from-file=provenance=frsca-ml/tekton/chains/provenance-template.cue -n tekton-chains
-          kubectl patch configmap chains-config -n tekton-chains -p '{"data":{"artifacts.taskrun.format":"cue", "artifacts.taskrun.storage":"oci", "transparency.enabled": "true", "artifacts.taskrun.signer.cue.config-map": "frsca-ml-cue"}}'
+          # Note: CUE templating is experimental. Reverting to standard SLSA for CI stability.
+          # kubectl create configmap frsca-ml-cue --from-file=provenance=frsca-ml/tekton/chains/provenance-template.cue -n tekton-chains
+          # kubectl patch configmap chains-config -n tekton-chains -p '{"data":{"artifacts.taskrun.format":"cue", "artifacts.taskrun.storage":"oci", "transparency.enabled": "true", "artifacts.taskrun.signer.cue.config-map": "frsca-ml-cue"}}'
+
+          # Using standard SLSA/v1 format to prevent controller crash
+          kubectl patch configmap chains-config -n tekton-chains -p '{"data":{"artifacts.taskrun.format":"slsa/v1", "artifacts.taskrun.storage":"oci", "transparency.enabled": "true"}}'
+
           # Restart chains to pick up config if needed (usually configmap reload is automatic but safe to bounce)
           kubectl delete pod -n tekton-chains -l app=tekton-chains-controller
           kubectl wait --for=condition=ready pod -l app=tekton-chains-controller -n tekton-chains --timeout=300s

@@ -13,15 +13,16 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+
+# The CUE Data Constraint Language
+
 [![Go Reference](https://pkg.go.dev/badge/cuelang.org/go.svg)](https://pkg.go.dev/cuelang.org/go)
 [![Github](https://github.com/cue-lang/cue/actions/workflows/trybot.yml/badge.svg)](https://github.com/cue-lang/cue/actions/workflows/trybot.yml?query=branch%3Amaster+event%3Apush)
 [![GolangCI](https://golangci.com/badges/github.com/cue-lang/cue.svg)](https://golangci.com/r/github.com/cue-lang/cue)
 [![Go 1.20+](https://img.shields.io/badge/go-1.20-9cf.svg)](https://golang.org/dl/)
-[![platforms](https://img.shields.io/badge/platforms-linux|windows|macos-inactive.svg)]()
+[![platforms](https://img.shields.io/badge/platforms-linux|windows|macos-inactive.svg)](https://cuelang.org/docs/install/)
 
-# The CUE Data Constraint Language
-
-_Configure, Unify, Execute_
+*Configure, Unify, Execute*
 
 CUE is an open source data constraint language which aims
 to simplify tasks involving defining and using data.
@@ -29,20 +30,19 @@ to simplify tasks involving defining and using data.
 It is a superset of JSON,
 allowing users familiar with JSON to get started quickly.
 
-
-### What is it for?
+## What is it for?
 
 You can use CUE to
 
-- define a detailed validation schema for your data (manually or automatically from data)
+- define a detailed validation schema for your data (manually or automatically
+  from data)
 - reduce boilerplate in your data (manually or automatically from schema)
 - extract a schema from code
 - generate type definitions and validation code
 - merge JSON in a principled way
 - define and run declarative scripts
 
-
-### How?
+## How?
 
 CUE merges the notion of schema and data.
 The same CUE definition can simultaneously be used for validating data
@@ -58,8 +58,7 @@ Constraints provide a simple and well-defined, yet powerful, alternative
 to inheritance,
 a common source of complexity with configuration languages.
 
-
-### CUE Scripting
+## CUE Scripting
 
 The CUE scripting layer defines declarative scripting, expressed in CUE,
 on top of data.
@@ -74,8 +73,7 @@ This solves dealing with data on one level, but the problem it solves may repeat
 itself at a higher level when integrating other systems in a workflow.
 CUE scripting is generic and allows users to define any workflow.
 
-
-### Tooling
+## Tooling
 
 CUE is designed for automation.
 Some aspects of this are:
@@ -88,35 +86,34 @@ Some aspects of this are:
 - generate CUE templates from source code
 - generate source code from CUE definitions (TODO)
 
+## Download and Install
 
-### Download and Install
+### Release builds
 
-#### Release builds
+[Download](https://github.com/cue-lang/cue/releases) the latest release from
+GitHub.
 
-[Download](https://github.com/cue-lang/cue/releases) the latest release from GitHub.
-
-#### Install using Homebrew
+### Install using Homebrew
 
 Using [Homebrew](https://brew.sh), you can install using the CUE Homebrew tap:
 
-```
+```bash
 brew install cue-lang/tap/cue
 ```
 
-#### Install from Source
+### Install from Source
 
 <!-- Keep the following in sync with cmd/cue/cmd/testdata/script/install*.txtar -->
 
 To install the `cue` command line tool, run:
 
-```
+```bash
 go install cuelang.org/go/cmd/cue@latest
 ```
 
 For more details, see [Installing CUE](./doc/install.md).
 
-
-### Learning CUE
+## Learning CUE
 
 The fastest way to learn the basics is to follow the
 [tutorial on basic language constructs](./doc/tutorial/basics/Readme.md).
@@ -125,28 +122,27 @@ A more elaborate tutorial demonstrating how to convert and restructure
 an existing set of Kubernetes configurations is available in
 [written form](./doc/tutorial/kubernetes/README.md).
 
-### References
+## References
 
-- [Language Specification](./doc/ref/spec.md): official CUE Language specification.
+- [Language Specification](./doc/ref/spec.md): official CUE Language
+  specification.
 
 - [API](https://pkg.go.dev/cuelang.org/go/cue): the API on pkg.go.dev
 
-- [Builtin packages](https://pkg.go.dev/cuelang.org/go/pkg): builtins available from CUE programs
+- [Builtin packages](https://pkg.go.dev/cuelang.org/go/pkg): builtins available
+  from CUE programs
 
 - [`cue` Command line reference](./doc/cmd/cue.md): the `cue` command
 
-
-### Contributing
+## Contributing
 
 To contribute, please read the [Contribution Guide](CONTRIBUTING.md).
-
 
 ## Code of Conduct
 
 Guidelines for participating in CUE community spaces and a reporting process for
 handling issues can be found in the [Code of
 Conduct](https://cuelang.org/docs/contribution_guidelines/conduct).
-
 
 ## Contact
 
@@ -162,4 +158,3 @@ Unless otherwise noted, the CUE source files are distributed
 under the Apache 2.0 license found in the LICENSE file.
 
 This is not an officially supported Google product.
-
