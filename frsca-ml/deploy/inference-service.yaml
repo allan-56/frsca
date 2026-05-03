@@ -1,0 +1,19 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: credit-scoring-v1
+  namespace: prod-models
+  labels:
+    app: credit-scoring
+    frsca.dev/compliant: "true"
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: sklearn
+      storageUri: "s3://models/credit-scoring/v1"
+      # In a real FRSCA setup, this would be an OCI image reference
+      # that contains the model and is signed.
+      # KServe supports ModelCars (OCI images)
+      runtime: kserve-sklearnserver
+      image: registry.example.com/models/credit-scoring:v1.0.0

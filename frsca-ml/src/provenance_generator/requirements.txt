@@ -1,0 +1,5 @@
+cyclonedx-python-lib>=6.0.0
+pydantic>=2.0.0
+boto3>=1.34.0
+testcontainers>=4.0.0
+pytest>=8.0.0
