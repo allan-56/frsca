@@ -1,0 +1,58 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: feature-extraction-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/tags: ml, features, frsca
+spec:
+  description: >-
+    Extracts features from an ingested dataset.
+
+  workspaces:
+    - name: source
+      description: Workspace containing the source code.
+
+  params:
+    - name: dataset-url
+      type: string
+      description: The URI of the dataset or snapshot ID.
+    - name: feature-config
+      type: string
+      description: Configuration for feature extraction.
+    - name: context-dir
+      type: string
+      default: "."
+
+  results:
+    - name: FEATURE_VIEW_ID
+      description: The ID of the generated feature view.
+    - name: ATTESTATION_URI
+      description: URI of the generated feature extraction attestation.
+
+  steps:
+    - name: extract-features
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+
+        CONTEXT_DIR=$(workspaces.source.path)/$(params.context-dir)
+        SRC_DIR="${CONTEXT_DIR}/src"
+        REQUIREMENTS_PATH="${CONTEXT_DIR}/src/provenance_generator/requirements.txt"
+
+        echo "Installing dependencies..."
+        if [ -f "${REQUIREMENTS_PATH}" ]; then
+          pip install -r "${REQUIREMENTS_PATH}"
+        fi
+
+        export PYTHONPATH=$PYTHONPATH:${SRC_DIR}
+
+        echo "Running Extraction..."
+        python3 -m provenance_generator.main extract \
+          --dataset-url "$(params.dataset-url)" \
+          --feature-config "$(params.feature-config)" \
+          --output-dir $(workspaces.source.path)/outputs/extract

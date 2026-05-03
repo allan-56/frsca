@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: yolo-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+  params:
+    - name: dataset-url
+      type: string
+    - name: epochs
+      type: string
+      default: "5"
+  tasks:
+    - name: train-yolo
+      taskRef:
+        name: yolo-training-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: dataset-url
+          value: $(params.dataset-url)
+        - name: epochs
+          value: $(params.epochs)

@@ -1,0 +1,61 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: iris-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+  params:
+    - name: git-url
+      type: string
+    - name: git-revision
+      type: string
+      default: "main"
+    - name: context-dir
+      type: string
+      default: "frsca-ml"
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+        kind: Task
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    - name: retrieve-features
+      runAfter:
+        - fetch-source
+      taskRef:
+        name: feast-feature-retrieval-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: entity-rows
+          value: "iris_1"
+        - name: feature-refs
+          value: "sepal_length,sepal_width"
+        - name: context-dir
+          value: $(params.context-dir)
+
+    - name: train-iris
+      runAfter:
+        - retrieve-features
+      taskRef:
+        name: iris-training-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: feature-data-path
+          value: $(tasks.retrieve-features.results.FEATURE_DATA_PATH)
+
+    # Note: MLflow logging task would come here, using train-iris metrics

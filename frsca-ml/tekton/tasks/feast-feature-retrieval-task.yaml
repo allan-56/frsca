@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: feast-feature-retrieval-task
+spec:
+  workspaces:
+    - name: source
+  params:
+    - name: entity-rows
+      type: string
+    - name: feature-refs
+      type: string
+    - name: context-dir
+      type: string
+      default: "."
+  results:
+    - name: FEATURE_DATA_PATH
+  steps:
+    - name: fetch-features
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+        pip install argparse
+        python3 $(params.context-dir)/integrations/feast/feature_store.py \
+          --entity-rows "$(params.entity-rows)" \
+          --feature-refs "$(params.feature-refs)" \
+          --output-path $(workspaces.source.path)/features.json
+
+        echo -n $(workspaces.source.path)/features.json > $(results.FEATURE_DATA_PATH.path)

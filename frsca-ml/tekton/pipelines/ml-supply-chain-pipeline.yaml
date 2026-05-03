@@ -5,7 +5,8 @@ metadata:
 spec:
   description: >-
     A secure ML supply chain pipeline that fetches code,
-    verifies data provenance, trains a model, and attests the results.
+    verifies data provenance, extracts features, trains a model,
+    evaluates it, and attests the results.
 
   workspaces:
     - name: shared-workspace
@@ -21,7 +22,14 @@ spec:
       default: "main"
     - name: dataset-url
       type: string
-      description: Location of the training dataset.
+      description: Location of the raw dataset.
+    - name: evaluation-data-url
+      type: string
+      description: Location of the evaluation dataset.
+    - name: feature-config
+      type: string
+      description: Feature extraction configuration.
+      default: "standard"
     - name: hyperparameters
       type: string
       default: '{"epochs": 5, "lr": 0.01}'
@@ -43,9 +51,41 @@ spec:
         - name: revision
           value: $(params.git-revision)
 
-    - name: train-model
+    - name: ingest-data
       runAfter:
         - fetch-source
+      taskRef:
+        name: data-ingestion-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: dataset-url
+          value: $(params.dataset-url)
+        - name: context-dir
+          value: $(params.context-dir)
+
+    - name: extract-features
+      runAfter:
+        - ingest-data
+      taskRef:
+        name: feature-extraction-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: dataset-url
+          value: $(params.dataset-url)
+        - name: feature-config
+          value: $(params.feature-config)
+        - name: context-dir
+          value: $(params.context-dir)
+
+    - name: train-model
+      runAfter:
+        - extract-features
       taskRef:
         name: model-training-task
         kind: Task
@@ -55,7 +95,26 @@ spec:
       params:
         - name: dataset-url
           value: $(params.dataset-url)
+        - name: feature-view-id
+          value: $(tasks.extract-features.results.FEATURE_VIEW_ID)
         - name: hyperparameters
           value: $(params.hyperparameters)
+        - name: context-dir
+          value: $(params.context-dir)
+
+    - name: evaluate-model
+      runAfter:
+        - train-model
+      taskRef:
+        name: model-evaluation-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: model-digest
+          value: $(tasks.train-model.results.MODEL_DIGEST)
+        - name: evaluation-data-url
+          value: $(params.evaluation-data-url)
         - name: context-dir
           value: $(params.context-dir)

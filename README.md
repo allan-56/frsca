@@ -93,7 +93,7 @@ It is a project under the [OpenSSF](https://openssf.org/)
 [Supply Chain Integrity Working Group](https://github.com/ossf/wg-supply-chain-integrity).
 
 Community meetings every other Wednesday at 10AM Eastern - See OpenSSF
-[community calendar](https://calendar.google.com/calendar/u/0?cid=czYzdm9lZmhwNWk5cGZsdGI1cTY3bmdwZXNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ)
+[community calendar][calendar]
 for more info.
 
 Slack channel: #frsca on [OpenSSF slack](https://slack.openssf.org/)
@@ -133,3 +133,4 @@ Tooling:
 [sigstore]: https://www.sigstore.dev/
 [cert-manager]: https://cert-manager.io/
 [registry]: https://hub.docker.com/_/registry
+[calendar]: https://calendar.google.com/calendar/u/0?cid=czYzdm9lZmhwNWk5cGZsdGI1cTY3bmdwZXNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ

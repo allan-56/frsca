@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: data-ingestion-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/tags: ml, data, frsca
+spec:
+  description: >-
+    Ingests and validates a dataset, producing a snapshot ID and provenance.
+
+  workspaces:
+    - name: source
+      description: Workspace containing the source code.
+
+  params:
+    - name: dataset-url
+      type: string
+      description: The URI of the raw dataset.
+    - name: context-dir
+      type: string
+      description: The directory containing the src folder.
+      default: "."
+
+  results:
+    - name: DATA_SNAPSHOT_ID
+      description: The ID of the ingested data snapshot.
+    - name: DATA_DIGEST
+      description: The SHA256 digest of the dataset.
+    - name: ATTESTATION_URI
+      description: URI of the generated ingestion attestation.
+
+  steps:
+    - name: ingest-data
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+
+        CONTEXT_DIR=$(workspaces.source.path)/$(params.context-dir)
+        SRC_DIR="${CONTEXT_DIR}/src"
+        REQUIREMENTS_PATH="${CONTEXT_DIR}/src/provenance_generator/requirements.txt"
+
+        echo "Installing dependencies..."
+        if [ -f "${REQUIREMENTS_PATH}" ]; then
+          pip install -r "${REQUIREMENTS_PATH}"
+        fi
+
+        export PYTHONPATH=$PYTHONPATH:${SRC_DIR}
+
+        echo "Running Ingestion..."
+        python3 -m provenance_generator.main ingest \
+          --dataset-url "$(params.dataset-url)" \
+          --output-dir $(workspaces.source.path)/outputs/ingest

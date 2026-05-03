@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: yolo-training-task
+spec:
+  workspaces:
+    - name: source
+  params:
+    - name: dataset-url
+      type: string
+    - name: epochs
+      type: string
+      default: "10"
+  results:
+    - name: MODEL_PATH
+    - name: MAP_SCORE
+  steps:
+    - name: train-yolo
+      image: ultralytics/ultralytics:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        # Mock YOLO training if GPU not available or just for demonstration
+        echo "Simulating YOLO training on $(params.dataset-url) for $(params.epochs) epochs..."
+
+        # In real scenario: yolo detect train data=$(params.dataset-url) epochs=$(params.epochs)
+
+        echo "0.95" > $(results.MAP_SCORE.path)
+        echo "mock-yolo-best.pt" > $(results.MODEL_PATH.path)
