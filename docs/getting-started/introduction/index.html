@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="preload" as="font" href="https://buildsec.github.io/frsca/fonts/vendor/jost/jost-v4-latin-regular.woff2" type="font/woff2" crossorigin>
+  <link rel="preload" as="font" href="https://buildsec.github.io/frsca/fonts/vendor/jost/jost-v4-latin-700.woff2"  type="font/woff2" crossorigin>
+
+
+<link rel="stylesheet" href="https://buildsec.github.io/frsca/main.css">
+
+
+
+  
+  
+    
+  
+
+  
+  
+    
+    
+  
+  
+  
+    
+  
+  
+  
+  
+    
+  
+  
+  
+
+
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+
+	
+
+
+	
+
+<title>Factory for Repeatable Secure Creation of Artifacts (FRSCA) | FRSCA</title>
+<meta name="description" content="FRSCA is a secure build system">
+<link rel="canonical" href="https://buildsec.github.io/frsca/docs/getting-started/introduction/">
+
+
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BreadcrumbList",
+    
+      
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          {
+            "@type": "ListItem",
+            "position":  1 ,
+            "name": "Home",
+            "item": "https://buildsec.github.io/frsca/"
+          },
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  2 ,
+            "name": "Docs",
+            "item": "https://buildsec.github.io/frsca/docs/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  3 ,
+            "name": "Getting Started",
+            "item": "https://buildsec.github.io/frsca/docs/getting-started/"
+          },
+        
+      
+        
+        
+        
+        
+        
+        
+        
+        
+          
+          
+          {
+            "@type": "ListItem",
+            "position":  4 ,
+            "name": "Introduction",
+            "item": "https://buildsec.github.io/frsca/docs/getting-started/introduction/"
+          },
+        
+      
+    
+  }
+</script>
+
+
+
+
+  <meta name="theme-color" content="#fff">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://buildsec.github.io/frsca/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://buildsec.github.io/frsca/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://buildsec.github.io/frsca/favicon-16x16.png">
+  
+    <link rel="manifest" href="https://buildsec.github.io/frsca/site.webmanifest">
+  
+
+
+  
+
+</head>
+
+  
+
+<body class="docs single">
+  
+  
+  
+  
+<div class="header-bar fixed-top"></div>
+<header class="navbar fixed-top navbar-expand-md navbar-light">
+	<div class="container">
+		<input class="menu-btn order-0" type="checkbox" id="menu-btn">
+		<label class="menu-icon d-md-none" for="menu-btn"><span class="navicon"></span></label>
+		<a class="navbar-brand order-1 order-md-0 me-auto" href="https://buildsec.github.io/frsca">FRSCA</a>
+		<button id="mode" class="btn btn-link order-2 order-md-4" type="button" aria-label="Toggle mode">
+			<span class="toggle-dark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
+			<span class="toggle-light"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span>
+		</button>
+		<ul class="navbar-nav fork-me order-3 order-md-5">
+			
+				
+					<li class="nav-item">
+						<a class="nav-link" href="https://github.com/buildsec/frsca"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-github"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg><span class="ms-2 visually-hidden">GitHub</span></a>
+					</li>
+				
+			
+		</ul>
+		<div class="collapse navbar-collapse order-4 order-md-1">
+			<ul class="navbar-nav main-nav me-auto order-5 order-md-2">
+				
+					
+						<li class="nav-item docs active">
+							<a class="nav-link" href="https://buildsec.github.io/frsca/docs/getting-started/introduction/">Docs</a>
+						</li>
+					
+				
+			</ul>
+			<div class="break order-6 d-md-none"></div>
+			
+				<form class="navbar-form flex-grow-1 order-7 order-md-3">
+					<input id="userinput" class="form-control is-search" type="search" placeholder="Search docs..."
+						aria-label="Search docs..." autocomplete="off">
+					<div id="suggestions" class="shadow bg-white rounded"></div>
+				</form>
+			
+		</div>
+	</div>
+</header>
+
+
+
+  
+<div class="wrap container" role="document">
+  <div class="content">
+    <div class="row flex-xl-nowrap">
+	  
+<div class="col-lg-5 col-xl-4 docs-sidebar">
+	<nav class="docs-links" aria-label="Main navigation">
+			
+			
+			
+			
+					
+					
+					
+							<h3>Getting Started</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link active" href="https://buildsec.github.io/frsca/docs/getting-started/introduction/">Factory for Repeatable Secure Creation of Artifacts (FRSCA)</a></li>
+							                           
+									<li><a class="docs-link" href="https://buildsec.github.io/frsca/docs/getting-started/quick-start/">Quick Start</a></li>
+							                           
+									<li><a class="docs-link" href="https://buildsec.github.io/frsca/docs/getting-started/architecture/">Architecture</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>SLSA</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://buildsec.github.io/frsca/docs/slsa/frsca-slsa/">How FRSCA is meeting SLSA levels 1-3</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>Contributing</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://buildsec.github.io/frsca/docs/contributing/how-to-contribute/">How to Contribute</a></li>
+							
+					</ul>
+					
+					
+					
+					
+							<h3>Help</h3>
+							<ul class="list-unstyled">
+							                           
+									<li><a class="docs-link" href="https://buildsec.github.io/frsca/docs/help/faq/">FAQ</a></li>
+							                           
+									<li><a class="docs-link" href="https://buildsec.github.io/frsca/docs/help/using-cue/">Using CUE</a></li>
+							
+					</ul>
+					
+					
+			
+	</nav>
+</div>
+
+	  
+  
+  <nav class="docs-toc d-none d-xl-block col-xl-3" aria-label="Secondary navigation">
+  	<div class="page-links">
+  			<h3>On this page</h3>
+  			<nav id="TableOfContents">
+  					<ul>
+  							
+  					</ul>
+  			</nav>
+  	</div>
+  </nav>
+  
+
+      <main class="docs-content col-lg-11 col-xl-9">
+        
+        
+        
+<h1 id="frsca">FRSCA</h1>
+<p><a rel="external" href="https://github.com/buildsec/frsca/actions"><img src="https://github.com/buildsec/frsca/workflows/CI/badge.svg" alt="Build status" /></a>
+<img src="https://github.com/buildsec/frsca/actions/workflows/all-examples.yaml/badge.svg" alt="All Examples" />
+<a rel="external" href="https://api.securityscorecards.dev/projects/github.com/buildsec/frsca"><img src="https://api.securityscorecards.dev/projects/github.com/buildsec/frsca/badge" alt="OpenSSF -Scorecard" /></a></p>
+<p align="center">
+<img src="https://buildsec.github.io/frsca/img/frsca_mascot-color.png"
+  alt="frsca logo" width="200"></img>
+</p>
+<h2 id="about-the-project">About The Project</h2>
+<p>Factory for Repeatable Secure Creation of Artifacts (aka FRSCA pronounced
+Fresca) aims to help secure the supply chain by securing build pipelines.</p>
+<p>It achieves its goals by being 2 things:</p>
+<ol>
+<li>A suite of build, pipeline, signing, visibility, identity, and policy tools
+configured to operate securely.</li>
+<li>A set of build pipeline abstractions and definitions with security guardrails
+ensuring all builds follow supply chain security best practices.</li>
+</ol>
+<p>At its core FRSCA uses these projects to achieve its goals:</p>
+<ul>
+<li><a rel="external" href="https://k8s.io/">Kubernetes</a> - For control plane</li>
+<li><a rel="external" href="https://tekton.dev/">Tekton Pipelines</a> - For build pipelines</li>
+<li><a rel="external" href="https://github.com/tektoncd/chains">Tekton Chains</a> - For pipeline task observation</li>
+<li><a rel="external" href="https://www.sigstore.dev/">Sigstore</a> - For signing software, attestations, SBOMs and other metadata</li>
+<li><a rel="external" href="https://spiffe.io/">SPIFFE/Spire</a> - For build workload identities</li>
+<li><a rel="external" href="https://www.vaultproject.io/">Vault</a> - For secrets management</li>
+<li><a rel="external" href="https://helm.sh/">Helm</a> and <a rel="external" href="https://cuelang.org/">CUE</a> - For provisioning kubernetes resources</li>
+<li><a rel="external" href="https://cuelang.org/">CUE</a> - For secure pipeline abstractions and definitions</li>
+</ul>
+<p>See:
+<a rel="external" href="https://buildsec.github.io/frsca/docs/getting-started/architecture/">Architecture Docs</a>
+for more info</p>
+<p>FRSCA is also an implementation of the CNCF's
+<a rel="external" href="https://github.com/cncf/tag-security/blob/main/community/working-groups/supply-chain-security/supply-chain-security-paper/CNCF_SSCP_v1.pdf">Secure Software Factory Reference Architecture</a>
+which is based on the CNCF's
+<a rel="external" href="https://github.com/cncf/tag-security/blob/main/community/working-groups/supply-chain-security/supply-chain-security-paper/CNCF_SSCP_v1.pdf">Software Supply Chain Best Practices White Paper</a>.
+It is also intended to follow <a rel="external" href="https://slsa.dev">SLSA</a> requirements closely and
+generate in-toto attesttations for SLSA provenance predicates.</p>
+<p><em>NOTE</em>: FRSCA is under very active development. A lot will change, it isn't
+production ready yet.</p>
+<h2 id="quickstart">Quickstart</h2>
+<p>To quickly provision a Minikube cluster with FRSCA deployed and run an example
+pipeline run:</p>
+<pre><code data-lang="bash"># Install and setup minikube (run only if need a local k8s)
+make setup-minikube
+make setup-frsca
+</code></pre>
+<p>This will perform the following actions:</p>
+<ol>
+<li>Install and setup minikube, and supporting cli tools, like <code>cosign</code> and <code>jq</code>
+if they are not already installed.</li>
+<li>Install development tooling to simulate a production environment, which
+includes:
+<ol>
+<li><a rel="external" href="https://cert-manager.io/">Cert-manager</a></li>
+<li><a rel="external" href="https://hub.docker.com/_/registry">registry</a></li>
+<li><a rel="external" href="https://spiffe.io/">SPIFFE/Spire</a></li>
+<li><a rel="external" href="https://www.vaultproject.io/">Vault</a></li>
+</ol>
+</li>
+<li>Install and setup FRSCA's components which include:
+<ol>
+<li><a rel="external" href="https://tekton.dev/">Tekton Pipelines</a></li>
+<li><a rel="external" href="https://github.com/tektoncd/chains">Tekton Chains</a></li>
+<li><a rel="external" href="https://kyverno.io/">Kyverno</a></li>
+</ol>
+</li>
+<li>Setup a mirror of example repositories and tekton triggers for each mirror.</li>
+</ol>
+<p>Once FRSCA has been installed you can follow the various examples under
+<code>/examples</code>.</p>
+<p>Tearing down the Minikube cluster generated in the quickstart, simply run:</p>
+<pre><code data-lang="bash">make teardown
+</code></pre>
+<h2 id="going-further">Going further</h2>
+<p>The full documentation is available at <a rel="external" href="https://buildsec.github.io/frsca/">https://buildsec.github.io/frsca/</a></p>
+<h2 id="community">Community</h2>
+<p>It is a project under the <a rel="external" href="https://openssf.org/">OpenSSF</a>
+<a rel="external" href="https://github.com/ossf/wg-supply-chain-integrity">Supply Chain Integrity Working Group</a>.</p>
+<p>Community meetings every other Wednesday at 10AM Eastern - See OpenSSF
+<a rel="external" href="https://calendar.google.com/calendar/u/0?cid=czYzdm9lZmhwNWk5cGZsdGI1cTY3bmdwZXNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ">community calendar</a>
+for more info.</p>
+<p>Slack channel: #frsca on <a rel="external" href="https://slack.openssf.org/">OpenSSF slack</a></p>
+<h3 id="built-with">Built With</h3>
+<p>Platform:</p>
+<ul>
+<li><a rel="external" href="https://kyverno.io/">Kyverno</a></li>
+<li><a rel="external" href="https://k8s.io/">Kubernetes</a></li>
+<li><a rel="external" href="https://tekton.dev/">Tekton Pipelines</a></li>
+<li><a rel="external" href="https://github.com/tektoncd/chains">Tekton Chains</a></li>
+<li><a rel="external" href="https://spiffe.io/">SPIFFE/Spire</a></li>
+<li><a rel="external" href="https://www.vaultproject.io/">Vault</a></li>
+</ul>
+<p>Tooling:</p>
+<ul>
+<li><a rel="external" href="https://github.com/sigstore/cosign">Cosign/Sget</a></li>
+<li><a rel="external" href="https://github.com/google/go-containerregistry">Crane</a></li>
+<li><a rel="external" href="https://cuelang.org/">Cue</a></li>
+<li><a rel="external" href="https://www.gnu.org/software/make/">Make</a></li>
+<li><a rel="external" href="https://github.com/sigstore/rekor">Rekor CLI</a></li>
+<li><a rel="external" href="https://helm.sh/">Helm</a></li>
+</ul>
+
+
+        
+        
+<div class="docs-navigation d-flex justify-content-between">
+  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+      
+      
+        
+          
+          
+          <a class="ms-auto" href="https:&#x2F;&#x2F;buildsec.github.io&#x2F;frsca&#x2F;docs&#x2F;slsa&#x2F;frsca-slsa&#x2F;">
+            <div class="card my-1">
+              <div class="card-body py-2">
+                How FRSCA is meeting SLSA levels 1-3 &rarr;
+              </div>
+            </div>
+          </a>
+          
+          
+          
+        
+      
+    
+      
+      
+        
+      
+    
+      
+      
+        
+      
+    
+  
+</div>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+
+  
+    
+<footer class="footer text-muted">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-8 order-last order-lg-first">
+				<ul class="list-inline">
+					
+						<li class="list-inline-item">Powered by <a href="https://www.getzola.org/">Zola</a>, and <a href="https://github.com/aaranxu/adidoks">AdiDoks</a></li>
+					
+				</ul>
+			</div>
+			<div class="col-lg-8 order-first order-lg-last text-lg-end">
+				<ul class="list-inline">
+					
+				</ul>
+			</div>
+		</div>
+	</div>
+</footer>
+
+  
+
+  
+<script src="https://buildsec.github.io/frsca/js/main.js" defer></script>
+
+  <script src="https://buildsec.github.io/frsca/plugins/elasticlunr.min.js" defer></script>
+  <script src="https://buildsec.github.io/frsca/search_index.en.js" defer></script>
+  <script src="https://buildsec.github.io/frsca/js/search.js" defer></script>
+
+  
+</body>
+</html>
