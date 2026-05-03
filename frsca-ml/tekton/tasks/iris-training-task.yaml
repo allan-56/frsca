@@ -20,36 +20,29 @@ spec:
         set -e
         pip install scikit-learn numpy pandas
 
-        cat <<EOF > train_iris.py
-        import json
-        import sys
-        import numpy as np
+        python3 -c "
+        import json, sys, numpy as np
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.metrics import accuracy_score
 
-        # Load features
-        with open("$(params.feature-data-path)", "r") as f:
+        with open('$(params.feature-data-path)', 'r') as f:
             data = json.load(f)
 
-        X = np.array(data["features"])
-        y = np.array(data["labels"])
+        X = np.array(data['features'])
+        y = np.array(data['labels'])
 
         clf = RandomForestClassifier(random_state=42)
         clf.fit(X, y)
 
-        # Eval (mock same data for simplicity)
         preds = clf.predict(X)
         acc = accuracy_score(y, preds)
 
-        print(f"Accuracy: {acc}")
+        print(f'Accuracy: {acc}')
 
-        metrics = {"accuracy": acc}
-        with open("$(results.TRAINING_METRICS.path)", "w") as f:
+        metrics = {'accuracy': float(acc)}
+        with open('$(results.TRAINING_METRICS.path)', 'w') as f:
             json.dump(metrics, f)
 
-        # Save model (mock)
-        with open("$(results.MODEL_PATH.path)", "w") as f:
-            f.write("mock-iris-model")
-        EOF
-
-        python3 train_iris.py
+        with open('$(results.MODEL_PATH.path)', 'w') as f:
+            f.write('mock-iris-model')
+        "

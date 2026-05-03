@@ -7,3 +7,6 @@ kubernetes/scripts/signature
 target/
 *.pub
 .vscode/
+__pycache__/
+*.pyc
+.pytest_cache/
