@@ -136,8 +136,8 @@ jobs:
           tkn pipeline start ml-supply-chain-pipeline \
             --param git-url="${REPO_URL}" \
             --param git-revision="${COMMIT_SHA}" \
-            --param dataset-url="s3://dummy/dataset.csv" \
-            --param evaluation-data-url="s3://dummy/eval.csv" \
+            --param dataset-url="https://example.com/dummy/dataset.csv" \
+            --param evaluation-data-url="https://example.com/dummy/eval.csv" \
             --param context-dir="frsca-ml" \
             --workspace name=shared-workspace,volumeClaimTemplateFile=platform/tekton/pvc.yaml \
             --use-param-defaults \
