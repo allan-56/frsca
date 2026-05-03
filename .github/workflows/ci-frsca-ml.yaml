@@ -109,8 +109,8 @@ jobs:
       - name: Install FRSCA-ML Components
         run: |
           echo "Installing Tasks and Pipelines..."
-          kubectl apply -f frsca-ml/tekton/tasks/model-training-task.yaml
-          kubectl apply -f frsca-ml/tekton/pipelines/ml-supply-chain-pipeline.yaml
+          kubectl apply -f frsca-ml/tekton/tasks/
+          kubectl apply -f frsca-ml/tekton/pipelines/
 
           echo "Configuring Chains for FRSCA-ML..."
           kubectl patch configmap chains-config -n tekton-chains \
