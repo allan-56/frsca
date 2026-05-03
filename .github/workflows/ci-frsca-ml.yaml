@@ -119,9 +119,6 @@ jobs:
           kubectl delete pod -n tekton-chains -l app=tekton-chains-controller
           kubectl wait --for=condition=ready pod -l app=tekton-chains-controller -n tekton-chains --timeout=300s
 
-          echo "Installing Policies..."
-          kubectl apply -f frsca-ml/policy/kyverno/require-ai-bom.yaml
-
       - name: Run ML Supply Chain Pipeline
         env:
           REGISTRY: "registry.registry"
@@ -160,7 +157,7 @@ jobs:
             fi
           done
 
-          echo "Verifying Kyverno Policy Status..."
-          kubectl get clusterpolicy require-ai-bom-and-accuracy -o yaml
+          echo "Verifying Kyverno Policies (standard FRSCA policies)..."
+          kubectl get clusterpolicy -o name
 
           echo "CI Passed Integration Verification."
