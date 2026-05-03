@@ -19,8 +19,6 @@ spec:
           - resources:
               kinds:
                 - InferenceService
-              apiGroups:
-                - serving.kserve.io
       verifyImages:
         - imageReferences:
             - "registry.example.com/models/*"
