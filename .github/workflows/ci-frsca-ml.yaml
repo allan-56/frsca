@@ -153,7 +153,7 @@ jobs:
         run: |
           TASK_RUNS=($(tkn pr describe --last -o jsonpath='{.status.childReferences}' | jq -r '.[] | select(.kind | match("TaskRun")) | .name'))
           for tr in "${TASK_RUNS[@]}"; do
-            SIGNED=$(tkn tr describe "${tr}" -o jsonpath='{.metadata.annotations["chains.tekton.dev/signed"]}')
+            SIGNED=$(kubectl get taskrun "${tr}" -o jsonpath='{.metadata.annotations.chains\.tekton\.dev/signed}')
             if [ "$SIGNED" == "true" ]; then
               echo "TaskRun ${tr} was signed."
             fi
