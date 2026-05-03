@@ -104,7 +104,12 @@ jobs:
         env:
           REGISTRY: "registry.registry"
         run: |
-          make setup-frsca
+          # Retry setup-frsca to handle cert-manager webhook flakiness
+          for i in 1 2 3; do
+            make setup-frsca && break
+            echo "Attempt $i failed, waiting 30s before retry..."
+            sleep 30
+          done
 
       - name: Install FRSCA-ML Components
         run: |
