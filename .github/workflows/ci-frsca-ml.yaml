@@ -135,11 +135,7 @@ jobs:
             --param context-dir="frsca-ml" \
             --workspace name=shared-workspace,volumeClaimTemplateFile=platform/tekton/pvc.yaml \
             --use-param-defaults \
-            --showlog > pipelinerun.log 2>&1 &
-
-          ./platform/wait-for-pipelinerun.sh -m ml-supply-chain-pipeline -n ml-supply-chain-pipeline-
-
-          tkn pr logs --last
+            --showlog
 
           if [ "$(tkn pr describe --last -o jsonpath='{.status.conditions[?(@.type == "Succeeded")].status}')" != "True" ]; then
             echo "Pipeline failed!"
