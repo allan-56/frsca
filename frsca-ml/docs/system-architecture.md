@@ -24,7 +24,7 @@ to secure Machine Learning supply chains. It ensures that every ML model artifac
 - **Documented** in SPDX 3.0.1 AI profile format
 - **Enforced** at deploy time via Kyverno admission policies
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                     FRSCA-ML Platform                           │
 │                                                                 │
@@ -46,6 +46,7 @@ to secure Machine Learning supply chains. It ensures that every ML model artifac
 │               │  (model + dataset + hash) │                     │
 │               └──────────────────────────┘                     │
 └─────────────────────────────────────────────────────────────────┘
+
 ```
 
 ---
@@ -54,7 +55,7 @@ to secure Machine Learning supply chains. It ensures that every ML model artifac
 
 ### The ML Supply Chain Pipeline
 
-```
+```text
 ml-supply-chain-pipeline
 │
 ├── 1. fetch-source          (git-clone Task)
@@ -91,17 +92,19 @@ ml-supply-chain-pipeline
 └── 5. evaluate-model         (model-evaluation-task)
         INPUT:  model-digest, evaluation-data-url
         PROCESS:
+
           - Load trained model
           - Run evaluation on held-out data
           - Compute metrics (accuracy, loss)
           - Check pass/fail threshold
           - Create evaluation attestation
         OUTPUT: EVALUATION_METRICS, PASSED, ATTESTATION_URI
+
 ```
 
 ### Data Flow Between Stages
 
-```
+```text
 Stage 1 (git-clone)
   └─▶ workspace/source/ contains repo with frsca-ml/src/
 
@@ -124,6 +127,7 @@ Stage 5 (evaluate)                            │
   ├─◀─────────────────────────────────────────┘ (uses MODEL_DIGEST)
   ├─▶ workspace/outputs/evaluate/evaluation_attestation.json
   └─▶ Results: EVALUATION_METRICS, PASSED
+
 ```
 
 ### What Each Task Produces
@@ -131,7 +135,7 @@ Stage 5 (evaluate)                            │
 Each task writes results to `/tekton/results/` which Tekton makes available
 to downstream tasks and the pipeline controller:
 
-```
+```text
 /tekton/results/
 ├── DATA_SNAPSHOT_ID      "snap-a1b2c3d4"
 ├── DATA_DIGEST           "sha256:e3b0c44298fc..."
@@ -141,6 +145,7 @@ to downstream tasks and the pipeline controller:
 ├── EVALUATION_METRICS    '{"accuracy":0.92,"loss":0.08}'
 ├── PASSED                "true"
 └── ATTESTATION_URI       "/workspace/outputs/train/attestation.json"
+
 ```
 
 ---
@@ -151,9 +156,10 @@ to downstream tasks and the pipeline controller:
 
 After each TaskRun completes, Tekton Chains:
 
-```
+```text
 1. Observes the TaskRun completion
 2. Collects:
+
    - Task definition (image, script, params)
    - Input artifacts (workspace contents, params)
    - Output artifacts (results, images)
@@ -161,10 +167,12 @@ After each TaskRun completes, Tekton Chains:
 3. Creates an in-toto attestation (SLSA v1 format)
 4. Signs it with the configured key (cosign/Vault)
 5. Stores:
+
    - Annotation: chains.tekton.dev/signed = "true"
    - Payload:   chains.tekton.dev/payload-taskrun-{UID} = base64(attestation)
    - Signature: chains.tekton.dev/signature-taskrun-{UID} = base64(sig)
    - OCI:       Pushes to registry (if IMAGE_URL result exists)
+
 ```
 
 ### Attestation Structure (per TaskRun)
@@ -194,6 +202,7 @@ After each TaskRun completes, Tekton Chains:
     }]
   }
 }
+
 ```
 
 ### ML-Specific Provenance (FRSCA extension)
@@ -234,6 +243,7 @@ The ML tasks also generate an extended attestation:
     }]
   }
 }
+
 ```
 
 ---
@@ -244,7 +254,7 @@ The ML tasks also generate an extended attestation:
 
 The SafeTensor format is validated in three steps:
 
-```
+```text
 Step 1: Type Detection
   ├─ Extension check: .safetensors → application/vnd.safetensors
   └─ Magic bytes:    first 8 bytes = b"sf_tensors"
@@ -257,11 +267,12 @@ Step 2: Header Parsing
 
 Step 3: Integrity Hash
   └─ SHA256 of entire file (header + tensor data)
+
 ```
 
 ### SafeTensor File Format
 
-```
+```text
 Offset 0:     [8 bytes] Header size (little-endian uint64)
 Offset 8:     [N bytes] Header JSON
 Offset 8+N:   [M bytes] Tensor data (contiguous binary)
@@ -282,6 +293,7 @@ Header JSON:
     "format": "pt"
   }
 }
+
 ```
 
 ### Validation Output
@@ -302,6 +314,7 @@ Header JSON:
     "metadata": {"format": "pt"}
   }
 }
+
 ```
 
 ---
@@ -310,7 +323,7 @@ Header JSON:
 
 ### What Gets Documented
 
-```
+```text
 SPDX Document: "distilbert-imdb-sbom"
 │
 ├── AIPackage: "distilbert-finetuned-imdb"
@@ -350,6 +363,7 @@ SPDX Document: "distilbert-imdb-sbom"
       distilbert-finetuned-imdb --trainedOn-->     dataset-imdb
       distilbert-finetuned-imdb --builtBy-->       build-frsca-hf-finetune
       distilbert-finetuned-imdb --hasDeclaredLicense--> Apache-2.0
+
 ```
 
 ### SPDX 3.0.1 AI Profile Classes Used
@@ -372,7 +386,7 @@ SPDX Document: "distilbert-imdb-sbom"
 
 Blocks deployment of model images unless:
 
-```
+```text
 Rule 1: Training Provenance Required
   ├─ MATCH:   InferenceService resources
   ├─ VERIFY:  attestation type = https://frsca.dev/provenance/ml-training/v0.2
@@ -382,11 +396,12 @@ Rule 2: AI-BOM Required
   ├─ MATCH:   InferenceService resources
   ├─ VERIFY:  attestation type = https://cyclonedx.org/bom
   └─ CONDITION: predicate.components[?type=='machine-learning-model'] > 0
+
 ```
 
 ### Enforcement Flow
 
-```
+```text
 Developer deploys model
   │
   ▼
@@ -406,6 +421,7 @@ Kyverno Admission Webhook
   │   └── NO  → REJECT
   │
   └── All checks pass → ALLOW deployment
+
 ```
 
 ### Additional Policies
@@ -426,7 +442,7 @@ Fine-tunes `distilbert-base-uncased` for sentiment analysis on the IMDB dataset.
 
 ### Step-by-Step
 
-```
+```text
 Step 1: Install Dependencies
   └─ pip install transformers datasets safetensors torch
 
@@ -459,11 +475,12 @@ Step 8: Write Tekton Results
   ├─ /tekton/results/MODEL_PATH        → /workspace/model-output/model.safetensors
   ├─ /tekton/results/TRAINING_METRICS  → {"accuracy":0.92,...}
   └─ /tekton/results/ATTESTATION_URI   → /workspace/outputs/finetune/attestation.json
+
 ```
 
 ### Input/Output Summary
 
-```
+```text
 INPUTS:
   ├── Source:     https://github.com/buildsec/frsca (git clone)
   ├── Model:      distilbert-base-uncased (from HuggingFace Hub)
@@ -482,6 +499,7 @@ VERIFICATION:
   ├── SLSA provenance stored in OCI registry
   ├── SHA256 of model.safetensors matches MODEL_DIGEST result
   └── SPDX SBOM documents model, dataset, build, and hash
+
 ```
 
 ---
@@ -490,8 +508,9 @@ VERIFICATION:
 
 ### Current Architecture (Single Pipeline)
 
-```
+```text
 Git Push → EventListener → TriggerTemplate → PipelineRun → Signed Artifacts
+
 ```
 
 ### Scaling Challenges
@@ -507,7 +526,7 @@ Git Push → EventListener → TriggerTemplate → PipelineRun → Signed Artifa
 
 ### Scaling Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    GitOps Control Plane                      │
 │                                                             │
@@ -541,6 +560,7 @@ Git Push → EventListener → TriggerTemplate → PipelineRun → Signed Artifa
 │  │ (mirror) │  │ (OCI)    │  │ (KMS)    │  │ (identity)│  │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 └─────────────────────────────────────────────────────────────┘
+
 ```
 
 ### Step 1: Multi-Tenant Namespaces
@@ -554,9 +574,11 @@ metadata:
   labels:
     frsca.ml/managed: "true"
     frsca.ml/team: "alpha"
+
 ```
 
 Each namespace gets:
+
 - Its own Tekton Triggers EventListener
 - Its own ServiceAccount + RBAC
 - Its own Kyverno policy exceptions (if needed)
@@ -575,19 +597,23 @@ spec:
     podTemplate:
       nodeSelector:
         frsca.ml/gpu: "false"   # CPU-only for data tasks
+
 ```
 
 Tekton's default controller handles concurrent PipelineRuns. For 1000 repos:
 
-```
+```text
 Concurrent PipelineRuns:  ~100 (limited by cluster resources)
 TaskRuns per Pipeline:    5
 Concurrent TaskRuns:      ~500
+
 ```
 
 Scale the Tekton controller:
+
 ```bash
 kubectl scale deployment tekton-pipelines-controller -n tekton-pipelines --replicas=3
+
 ```
 
 ### Step 3: Chains Scaling
@@ -604,16 +630,18 @@ data:
   artifacts.taskrun.format: "slsa/v1"    # SLSA provenance format
   transparency.enabled: "true"           # Rekor transparency log
   storage.oci.repository: "registry.example.com/attestations"
+
 ```
 
 For 1000 repos with 5 TaskRuns each = 5000 attestations:
+
 - Storage: ~500MB (each attestation ~100KB)
 - Signing: 5000 cosign operations
 - Use `oci` storage to avoid annotation size limits
 
 ### Step 4: Registry Architecture
 
-```
+```text
 registry.example.com/
 ├── models/
 │   ├── team-alpha/
@@ -629,9 +657,11 @@ registry.example.com/
 │   └── ...
 └── base-images/
     └── python/3.12-slim             (shared base)
+
 ```
 
 Storage estimate for 1000 repos:
+
 - Models: 1000 × 264MB = ~264GB
 - Attestations: 5000 × 100KB = ~500MB
 - Total: ~265GB (use object storage backend)
@@ -646,10 +676,12 @@ metadata:
   name: frsca-ml-repos
 spec:
   generators:
+
     - git:
         repoURL: https://github.com/org/ml-repos-manifest
         revision: main
         directories:
+
           - path: "repos/*"
   template:
     metadata:
@@ -667,6 +699,7 @@ spec:
         automated:
           prune: true
           selfHeal: true
+
 ```
 
 ### Step 6: Auto-Provisioning Script
@@ -701,8 +734,10 @@ metadata:
 spec:
   serviceAccountName: pipeline-account
   triggers:
+
     - name: ml-pipeline
       bindings:
+
         - ref: ml-pipeline-binding
       template:
         ref: ml-pipeline-template
@@ -717,11 +752,12 @@ curl -X POST "https://gitea-http:3000/api/v1/orgs/${TEAM_NAME}/repos" \
 curl -X POST "https://gitea-http:3000/api/v1/repos/${TEAM_NAME}/${REPO_NAME}/hooks" \
   -H "Content-Type: application/json" \
   -d "{\"config\": {\"url\": \"http://el-${REPO_NAME}-listener.${NAMESPACE}:8080\", \"content_type\": \"json\"}}"
+
 ```
 
 ### Step 7: Monitoring at Scale
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │              Grafana Dashboard                    │
 │                                                  │
@@ -734,6 +770,7 @@ curl -X POST "https://gitea-http:3000/api/v1/repos/${TEAM_NAME}/${REPO_NAME}/hoo
 │  Active PipelineRuns: 47   Queued: 12             │
 │  Registry Usage: 187GB     Attestations: 3,847    │
 └─────────────────────────────────────────────────┘
+
 ```
 
 ### Scaling Summary
