@@ -1,0 +1,99 @@
+# FRSCA-ML Provenance Hook: MinIO Webhook Deployment
+# Deploys alongside MinIO to automatically sign model artifacts.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frsca-ml-webhook-config
+  namespace: ml-platform
+data:
+  MINIO_ENDPOINT: "http://minio.ml-platform:9000"
+  WATCHED_BUCKETS: "models,checkpoints"
+  OUTPUT_BUCKET: "attestations"
+  ARTIFACT_EXTENSIONS: ".safetensors,.bin,.pt,.onnx,.pkl,.h5"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frsca-ml-provenance-webhook
+  namespace: ml-platform
+  labels:
+    app: frsca-ml-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frsca-ml-webhook
+  template:
+    metadata:
+      labels:
+        app: frsca-ml-webhook
+    spec:
+      serviceAccountName: frsca-ml-webhook
+      containers:
+        - name: webhook
+          image: frsca-ml/provenance-hook:latest
+          command: ["python", "-m", "frsca_ml_provenance.minio_webhook"]
+          envFrom:
+            - configMapRef:
+                name: frsca-ml-webhook-config
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: access-key
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: secret-key
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frsca-ml-webhook
+  namespace: ml-platform
+---
+# Kyverno policy: Block model serving unless attestation exists
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: frsca-ml-require-model-attestation
+  annotations:
+    policies.kyverno.io/title: Require FRSCA-ML Model Attestation
+    policies.kyverno.io/category: ML Supply Chain Security
+    policies.kyverno.io/description: >-
+      Blocks deployment of model serving pods unless the model image
+      has a valid FRSCA-ML provenance attestation with SHA256 digest.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: check-model-attestation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      preconditions:
+        all:
+          - key: "{{ request.object.metadata.labels.frsca\\.ml/model }}"
+            operator: Equals
+            value: "true"
+      validate:
+        message: >-
+          Model serving pods must have a valid FRSCA-ML attestation.
+          Ensure the model was ingested through the FRSCA-ML provenance webhook.
+        pattern:
+          metadata:
+            annotations:
+              frsca.ml/attestation-uri: "*"
+              frsca.ml/model-sha256: "*"
