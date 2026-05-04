@@ -159,6 +159,18 @@ example-maven: ## Run the maven example
 example-sample-pipeline: ## Run the sample-pipeline example
 	bash examples/sample-pipeline/sample-pipeline-run.sh
 
+.PHONY: setup-example-ml
+setup-example-ml: ## Setup the FRSCA-ML pipeline
+	bash frsca-ml/scripts/ml-setup.sh
+
+.PHONY: example-ml
+example-ml: ## Run the FRSCA-ML pipeline
+	bash frsca-ml/scripts/ml-run.sh
+
+.PHONY: ml-verify-provenance
+ml-verify-provenance: ## Verify FRSCA-ML pipeline provenance
+	bash frsca-ml/scripts/ml-verify-provenance.sh
+
 .PHONY: docs-setup
 docs-setup: ## Install the tool to build the documentation
 	bash docs/bootstrap.sh

@@ -97,32 +97,20 @@ jobs:
           ./platform/vendor/vendor-helm-all.sh
 
       - name: Start minikube
-        run: |
-          make setup-minikube
+        run: make setup-minikube
 
       - name: Initialize FRSCA
         env:
           REGISTRY: "registry.registry"
         run: |
-          # Retry setup-frsca to handle cert-manager webhook flakiness
           for i in 1 2 3; do
             make setup-frsca && break
             echo "Attempt $i failed, waiting 30s before retry..."
             sleep 30
           done
 
-      - name: Install FRSCA-ML Components
-        run: |
-          echo "Installing Tasks and Pipelines..."
-          kubectl apply -f frsca-ml/tekton/tasks/
-          kubectl apply -f frsca-ml/tekton/pipelines/
-
-          echo "Configuring Chains for FRSCA-ML..."
-          kubectl patch configmap chains-config -n tekton-chains \
-            -p '{"data":{"artifacts.taskrun.format":"slsa/v1","artifacts.taskrun.storage":"oci","transparency.enabled":"true"}}'
-
-          kubectl delete pod -n tekton-chains -l app=tekton-chains-controller
-          kubectl wait --for=condition=ready pod -l app=tekton-chains-controller -n tekton-chains --timeout=300s
+      - name: Setup FRSCA-ML Pipeline
+        run: make setup-example-ml
 
       - name: Run ML Supply Chain Pipeline
         env:
@@ -131,35 +119,18 @@ jobs:
           COMMIT_SHA: "${{ github.sha }}"
         run: |
           make registry-proxy >/dev/null &
+          make example-ml
 
-          echo "Starting Pipeline..."
-          tkn pipeline start ml-supply-chain-pipeline \
-            --param git-url="${REPO_URL}" \
-            --param git-revision="${COMMIT_SHA}" \
-            --param dataset-url="https://example.com/dummy/dataset.csv" \
-            --param evaluation-data-url="https://example.com/dummy/eval.csv" \
-            --param context-dir="frsca-ml" \
-            --workspace name=shared-workspace,volumeClaimTemplateFile=platform/tekton/pvc.yaml \
-            --use-param-defaults \
-            --showlog
+      - name: Wait for Chains signing
+        run: sleep 60
 
-          if [ "$(tkn pr describe --last -o jsonpath='{.status.conditions[?(@.type == "Succeeded")].status}')" != "True" ]; then
-            echo "Pipeline failed!"
-            tkn pr describe --last
-            exit 1
-          fi
-
-      - name: Verify Artifacts and Policy
+      - name: Verify ML Pipeline Provenance
         run: |
-          TASK_RUNS=($(tkn pr describe --last -o jsonpath='{.status.childReferences}' | jq -r '.[] | select(.kind | match("TaskRun")) | .name'))
-          for tr in "${TASK_RUNS[@]}"; do
-            SIGNED=$(kubectl get taskrun "${tr}" -o jsonpath='{.metadata.annotations.chains\.tekton\.dev/signed}')
-            if [ "$SIGNED" == "true" ]; then
-              echo "TaskRun ${tr} was signed."
-            fi
-          done
+          # Layer 1-3: Pipeline success, Chains annotations, cosign verification
+          bash frsca-ml/scripts/ml-verify-provenance.sh
 
-          echo "Verifying Kyverno Policies (standard FRSCA policies)..."
+          # Layer 4: Verify Kyverno admission policies are installed
+          echo "Verifying Kyverno Policies..."
           kubectl get clusterpolicy -o name
 
-          echo "CI Passed Integration Verification."
+          echo "CI Passed Full FRSCA-ML Verification."
