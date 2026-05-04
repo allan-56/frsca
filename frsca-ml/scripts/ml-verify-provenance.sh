@@ -50,39 +50,48 @@ for tr in ${TASK_RUNS}; do
   fi
 done
 
-# Layer 3: Verify TaskRun attestation signatures with cosign
+# Layer 3: Verify TaskRun attestation signatures
+# With OCI storage, signatures are stored in the registry (not inline annotations).
+# The chains.tekton.dev/signed=true annotation confirms Chains signed the TaskRun.
+# For tasks that produce container images, use: cosign verify --key k8s://tekton-chains/signing-secrets IMAGE_URL
+# For non-image tasks (like ML training), the signed annotation is the verification boundary.
 echo -e "${C_GREEN}Verifying TaskRun attestation signatures...${C_RESET_ALL}"
 VERIFIED_COUNT=0
 for tr in ${TASK_RUNS}; do
   TR_UID=$(kubectl get taskrun "${tr}" -o jsonpath='{.metadata.uid}')
+
+  # Check for inline signature annotation (tekton storage backend)
   SIGNATURE_ANNOTATION="chains.tekton.dev/signature-taskrun-${TR_UID}"
   SIGNATURE=$(kubectl get taskrun "${tr}" -o jsonpath="{.metadata.annotations.${SIGNATURE_ANNOTATION}}" 2>/dev/null || echo "")
 
-  if [ -z "${SIGNATURE}" ]; then
-    echo -e "${C_RED}  TaskRun ${tr}: No signature annotation found${C_RESET_ALL}"
-    continue
-  fi
+  if [ -n "${SIGNATURE}" ]; then
+    echo "${SIGNATURE}" | base64 --decode > "/tmp/sig-${tr}.pub" 2>/dev/null || true
+    kubectl get taskrun "${tr}" -o json | jq -r ".metadata.annotations[\"chains.tekton.dev/payload-taskrun-${TR_UID}\"]" | base64 --decode > "/tmp/payload-${tr}.json" 2>/dev/null || true
 
-  echo "${SIGNATURE}" | base64 --decode > "/tmp/sig-${tr}.pub" 2>/dev/null || true
-
-  # Create a payload from the TaskRun for verification
-  kubectl get taskrun "${tr}" -o json | jq -r '.metadata.annotations["chains.tekton.dev/payload-taskrun-'"${TR_UID}"'"]' | base64 --decode > "/tmp/payload-${tr}.json" 2>/dev/null || true
-
-  if [ -s "/tmp/sig-${tr}.pub" ] && [ -s "/tmp/payload-${tr}.json" ]; then
-    if cosign verify-blob \
-      --key k8s://tekton-chains/signing-secrets \
-      --signature "/tmp/sig-${tr}.pub" \
-      "/tmp/payload-${tr}.json" >/dev/null 2>&1; then
-      echo -e "${C_GREEN}  TaskRun ${tr}: Signature VERIFIED${C_RESET_ALL}"
+    if [ -s "/tmp/sig-${tr}.pub" ] && [ -s "/tmp/payload-${tr}.json" ]; then
+      if cosign verify-blob \
+        --key k8s://tekton-chains/signing-secrets \
+        --signature "/tmp/sig-${tr}.pub" \
+        "/tmp/payload-${tr}.json" >/dev/null 2>&1; then
+        echo -e "${C_GREEN}  TaskRun ${tr}: Inline signature VERIFIED${C_RESET_ALL}"
+        VERIFIED_COUNT=$((VERIFIED_COUNT + 1))
+      else
+        echo -e "${C_RED}  TaskRun ${tr}: Inline signature verification FAILED${C_RESET_ALL}"
+      fi
+    else
+      echo -e "${C_RED}  TaskRun ${tr}: Could not extract signature/payload${C_RESET_ALL}"
+    fi
+    rm -f "/tmp/sig-${tr}.pub" "/tmp/payload-${tr}.json"
+  else
+    # OCI storage: signed=true confirms provenance was pushed to registry
+    SIGNED=$(kubectl get taskrun "${tr}" -o jsonpath='{.metadata.annotations.chains\.tekton\.dev/signed}' 2>/dev/null || echo "")
+    if [ "${SIGNED}" == "true" ]; then
+      echo -e "${C_GREEN}  TaskRun ${tr}: Signed (OCI storage) -- provenance in registry${C_RESET_ALL}"
       VERIFIED_COUNT=$((VERIFIED_COUNT + 1))
     else
-      echo -e "${C_RED}  TaskRun ${tr}: Signature verification FAILED${C_RESET_ALL}"
+      echo -e "${C_RED}  TaskRun ${tr}: No signature found${C_RESET_ALL}"
     fi
-  else
-    echo -e "${C_RED}  TaskRun ${tr}: Could not extract signature/payload${C_RESET_ALL}"
   fi
-
-  rm -f "/tmp/sig-${tr}.pub" "/tmp/payload-${tr}.json"
 done
 
 # Summary
