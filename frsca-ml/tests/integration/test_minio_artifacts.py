@@ -145,7 +145,7 @@ class TestProvenanceHookWithMinIO:
             output_dir=output_dir,
         )
 
-        assert result["artifact"]["sha256"] == art["sha256"]
+        assert result["artifact"]["digest"] == art["sha256"]
         assert result["artifact"]["media_type"] == "application/vnd.safetensors"
         assert "attestation" in result
         assert "spdx" in result
@@ -165,7 +165,7 @@ class TestProvenanceHookWithMinIO:
         assert spdx["type"] == "SpdxDocument"
         assert spdx["profileConformance"] == ["core", "software", "ai", "dataset", "build"]
 
-    def test_capture_from_s3(self, minio_client, minio_container, tmp_artifacts, tmp_path):
+    def test_capture_from_s3(self, minio_client, minio_endpoint, tmp_artifacts, tmp_path):
         """Capture provenance from an S3/MinIO artifact."""
         art = tmp_artifacts["safetensors"]
         minio_client.upload_file(art["path"], "models", "model.safetensors")
@@ -180,13 +180,13 @@ class TestProvenanceHookWithMinIO:
             builder_id="test-minio",
             framework="pytorch",
             output_dir=output_dir,
-            s3_endpoint_url=minio_container.get_connection_url(),
+            s3_endpoint_url=minio_endpoint,
         )
 
-        assert result["artifact"]["sha256"] == art["sha256"]
+        assert result["artifact"]["digest"] == art["sha256"]
         assert result["artifact"]["size_bytes"] == art["size"]
 
-    def test_provenance_chain_integrity(self, minio_client, minio_container, tmp_artifacts, tmp_path):
+    def test_provenance_chain_integrity(self, minio_client, minio_endpoint, tmp_artifacts, tmp_path):
         """Verify full chain: upload → hash → attest → store."""
         art = tmp_artifacts["safetensors"]
         minio_client.upload_file(art["path"], "models", "model.safetensors")
@@ -202,7 +202,7 @@ class TestProvenanceHookWithMinIO:
             builder_id="integration-test",
             framework="pytorch",
             output_dir=output_dir,
-            s3_endpoint_url=minio_container.get_connection_url(),
+            s3_endpoint_url=minio_endpoint,
         )
 
         att = result["attestation"]

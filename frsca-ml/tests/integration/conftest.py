@@ -137,17 +137,27 @@ def minio_client(minio_container):
     """Get a boto3 S3 client connected to the MinIO container."""
     import boto3
 
+    config = minio_container.get_config()
+    endpoint_url = f"http://{config['endpoint']}"
+
     client = boto3.client(
         "s3",
-        endpoint_url=minio_container.get_connection_url(),
-        aws_access_key_id=minio_container.access_key,
-        aws_secret_access_key=minio_container.secret_key,
+        endpoint_url=endpoint_url,
+        aws_access_key_id=config["access_key"],
+        aws_secret_access_key=config["secret_key"],
     )
 
     client.create_bucket(Bucket="models")
     client.create_bucket(Bucket="attestations")
 
     return client
+
+
+@pytest.fixture
+def minio_endpoint(minio_container):
+    """Get the MinIO endpoint URL."""
+    config = minio_container.get_config()
+    return f"http://{config['endpoint']}"
 
 
 @pytest.fixture
