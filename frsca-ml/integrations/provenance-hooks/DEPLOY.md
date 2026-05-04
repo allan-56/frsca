@@ -6,7 +6,7 @@ FRSCA-ML doesn't replace your existing ML platform. It wraps around it as a
 **security and provenance layer** that intercepts artifacts, signs them, and
 enforces policies at deployment time.
 
-```
+```text
 YOUR EXISTING PLATFORM                    FRSCA-ML LAYER
 ─────────────────────                    ──────────────
 
@@ -49,6 +49,7 @@ make setup-example-ml    # FRSCA-ML tasks and pipelines
 ```
 
 This installs:
+
 - Tekton Pipelines (pipeline engine)
 - Tekton Chains (automatic signing)
 - Kyverno (policy enforcement)
@@ -74,6 +75,7 @@ kubectl apply -f frsca-ml/integrations/provenance-hooks/deploy/webhook-deploymen
 ```
 
 The webhook will:
+
 1. Watch `models` and `checkpoints` buckets
 2. When a `.safetensors`, `.bin`, `.pt`, `.onnx`, or `.pkl` file appears
 3. Compute its SHA256 hash
@@ -196,6 +198,7 @@ spec:
 ```
 
 Kyverno will:
+
 - Check that `frsca.ml/attestation-uri` annotation exists
 - Check that `frsca.ml/model-sha256` annotation exists
 - Block deployment if either is missing

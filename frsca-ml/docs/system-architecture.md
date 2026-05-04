@@ -739,7 +739,7 @@ curl -X POST "https://gitea-http:3000/api/v1/repos/${TEAM_NAME}/${REPO_NAME}/hoo
 ### Scaling Summary
 
 | Dimension | Strategy | Target |
-|---|---|---|
+| --- | --- | --- |
 | **Repos** | Auto-provision via GitOps | 1000+ |
 | **Concurrency** | Multi-namespace + parallel PipelineRuns | 100 concurrent |
 | **Signing** | OCI storage + controller replicas | 5000/hour |
