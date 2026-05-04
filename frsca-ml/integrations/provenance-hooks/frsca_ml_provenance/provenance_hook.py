@@ -28,9 +28,13 @@ from urllib.parse import urlparse
 import boto3
 
 
-def compute_s3_hash(bucket: str, key: str, endpoint_url: Optional[str] = None) -> str:
+def compute_s3_hash(bucket: str, key: str, endpoint_url: Optional[str] = None, access_key: Optional[str] = None, secret_key: Optional[str] = None) -> str:
     """Compute SHA256 of an object in S3/MinIO without downloading the full file."""
-    s3 = boto3.client("s3", endpoint_url=endpoint_url)
+    kwargs = {"endpoint_url": endpoint_url} if endpoint_url else {}
+    if access_key and secret_key:
+        kwargs["aws_access_key_id"] = access_key
+        kwargs["aws_secret_access_key"] = secret_key
+    s3 = boto3.client("s3", **kwargs)
     h = hashlib.sha256()
 
     response = s3.head_object(Bucket=bucket, Key=key)
@@ -58,17 +62,21 @@ def compute_local_hash(filepath: str) -> str:
     return h.hexdigest()
 
 
-def resolve_artifact(uri: str, endpoint_url: Optional[str] = None) -> dict:
+def resolve_artifact(uri: str, endpoint_url: Optional[str] = None, access_key: Optional[str] = None, secret_key: Optional[str] = None) -> dict:
     """Resolve an artifact URI to its hash, size, and media type."""
     parsed = urlparse(uri)
 
     if parsed.scheme in ("s3", "s3a"):
         bucket = parsed.netloc
         key = parsed.path.lstrip("/")
-        s3 = boto3.client("s3", endpoint_url=endpoint_url)
+        kwargs = {"endpoint_url": endpoint_url} if endpoint_url else {}
+        if access_key and secret_key:
+            kwargs["aws_access_key_id"] = access_key
+            kwargs["aws_secret_access_key"] = secret_key
+        s3 = boto3.client("s3", **kwargs)
         head = s3.head_object(Bucket=bucket, Key=key)
         size = head["ContentLength"]
-        digest = compute_s3_hash(bucket, key, endpoint_url)
+        digest = compute_s3_hash(bucket, key, endpoint_url, access_key, secret_key)
     elif parsed.scheme == "file" or parsed.scheme == "":
         filepath = parsed.path if parsed.scheme == "file" else uri
         size = os.path.getsize(filepath)
@@ -108,6 +116,8 @@ def capture(
     framework_version: str = "unknown",
     output_dir: Optional[str] = None,
     s3_endpoint_url: Optional[str] = None,
+    s3_access_key: Optional[str] = None,
+    s3_secret_key: Optional[str] = None,
 ) -> dict:
     """
     Capture provenance for a trained model artifact.
@@ -140,7 +150,7 @@ def capture(
         params = {}
 
     print(f"[FRSCA-ML] Resolving artifact: {model_path}")
-    artifact = resolve_artifact(model_path, s3_endpoint_url)
+    artifact = resolve_artifact(model_path, s3_endpoint_url, s3_access_key, s3_secret_key)
     print(f"[FRSCA-ML] SHA256: {artifact['digest']}")
     print(f"[FRSCA-ML] Size: {artifact['size_bytes']} bytes")
     print(f"[FRSCA-ML] Type: {artifact['media_type']}")

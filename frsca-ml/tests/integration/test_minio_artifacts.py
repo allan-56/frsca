@@ -165,11 +165,12 @@ class TestProvenanceHookWithMinIO:
         assert spdx["type"] == "SpdxDocument"
         assert spdx["profileConformance"] == ["core", "software", "ai", "dataset", "build"]
 
-    def test_capture_from_s3(self, minio_client, minio_endpoint, tmp_artifacts, tmp_path):
+    def test_capture_from_s3(self, minio_client, minio_endpoint, minio_container, tmp_artifacts, tmp_path):
         """Capture provenance from an S3/MinIO artifact."""
         art = tmp_artifacts["safetensors"]
         minio_client.upload_file(art["path"], "models", "model.safetensors")
 
+        config = minio_container.get_config()
         output_dir = str(tmp_path / "output")
         os.makedirs(output_dir, exist_ok=True)
 
@@ -181,15 +182,19 @@ class TestProvenanceHookWithMinIO:
             framework="pytorch",
             output_dir=output_dir,
             s3_endpoint_url=minio_endpoint,
+            s3_access_key=config["access_key"],
+            s3_secret_key=config["secret_key"],
         )
 
         assert result["artifact"]["digest"] == art["sha256"]
         assert result["artifact"]["size_bytes"] == art["size"]
 
-    def test_provenance_chain_integrity(self, minio_client, minio_endpoint, tmp_artifacts, tmp_path):
+    def test_provenance_chain_integrity(self, minio_client, minio_endpoint, minio_container, tmp_artifacts, tmp_path):
         """Verify full chain: upload → hash → attest → store."""
         art = tmp_artifacts["safetensors"]
         minio_client.upload_file(art["path"], "models", "model.safetensors")
+
+        config = minio_container.get_config()
 
         output_dir = str(tmp_path / "output")
         os.makedirs(output_dir, exist_ok=True)
@@ -203,6 +208,8 @@ class TestProvenanceHookWithMinIO:
             framework="pytorch",
             output_dir=output_dir,
             s3_endpoint_url=minio_endpoint,
+            s3_access_key=config["access_key"],
+            s3_secret_key=config["secret_key"],
         )
 
         att = result["attestation"]
