@@ -24,6 +24,11 @@ from provenance_generator.artifact_validator import (
     validate_safetensors_header,
 )
 
+try:
+    from frsca_ml_provenance.provenance_hook import capture
+except ImportError:
+    from provenance_generator.provenance_hook import capture
+
 
 class TestMinIOArtifactUpload:
     """Upload artifacts to MinIO and verify integrity."""
@@ -127,8 +132,6 @@ class TestProvenanceHookWithMinIO:
 
     def test_capture_from_local_file(self, tmp_artifacts, tmp_path):
         """Capture provenance from a local file."""
-        from provenance_generator.provenance_hook import capture
-
         art = tmp_artifacts["safetensors"]
         output_dir = str(tmp_path / "output")
         os.makedirs(output_dir, exist_ok=True)
@@ -164,8 +167,6 @@ class TestProvenanceHookWithMinIO:
 
     def test_capture_from_s3(self, minio_client, minio_container, tmp_artifacts, tmp_path):
         """Capture provenance from an S3/MinIO artifact."""
-        from provenance_generator.provenance_hook import capture
-
         art = tmp_artifacts["safetensors"]
         minio_client.upload_file(art["path"], "models", "model.safetensors")
 
@@ -187,8 +188,6 @@ class TestProvenanceHookWithMinIO:
 
     def test_provenance_chain_integrity(self, minio_client, minio_container, tmp_artifacts, tmp_path):
         """Verify full chain: upload → hash → attest → store."""
-        from provenance_generator.provenance_hook import capture
-
         art = tmp_artifacts["safetensors"]
         minio_client.upload_file(art["path"], "models", "model.safetensors")
 

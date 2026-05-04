@@ -97,17 +97,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r frsca-ml/src/provenance_generator/requirements.txt pyyaml docker kubernetes
+          pip install -r frsca-ml/src/provenance_generator/requirements.txt pyyaml docker kubernetes minio
 
       - name: Run MinIO artifact integration tests
         env:
-          PYTHONPATH: "frsca-ml/src"
+          PYTHONPATH: "frsca-ml/src:frsca-ml/integrations/provenance-hooks"
         run: |
           python3 -m pytest frsca-ml/tests/integration/test_minio_artifacts.py -v --tb=short
 
       - name: Run SPDX generation integration tests
         env:
-          PYTHONPATH: "frsca-ml/src"
+          PYTHONPATH: "frsca-ml/src:frsca-ml/integrations/provenance-hooks"
         run: |
           python3 -m pytest frsca-ml/tests/integration/test_spdx_generation.py -v --tb=short
 
