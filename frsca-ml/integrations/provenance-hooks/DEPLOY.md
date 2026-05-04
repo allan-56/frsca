@@ -224,7 +224,7 @@ bash frsca-ml/scripts/ml-verify-provenance.sh
 ## Integration Points Summary
 
 | Your System | FRSCA-ML Integration | Change Required |
-|---|---|---|
+| --- | --- | --- |
 | **MLflow Tracking** | `provenance_hook.capture()` after `log_model()` | Add 5 lines |
 | **MinIO/S3** | Webhook watches buckets automatically | No code change |
 | **Ray/KubeRay** | `wrap_ray_trainer()` or `capture_ray_provenance()` | Add 3 lines |
@@ -236,7 +236,7 @@ bash frsca-ml/scripts/ml-verify-provenance.sh
 
 For every model artifact, FRSCA-ML records:
 
-```
+```text
 Attestation (in-toto v0.1):
 ├── buildDefinition
 │   ├── buildType: "https://frsca.dev/ml/build/v1"
@@ -275,12 +275,14 @@ For production use across many teams:
 
 3. **Shared MinIO**: One MinIO instance serves all teams. The webhook watches
    all model buckets. Attestations stored per-team:
-   ```
+
+   ```text
    s3://attestations/team-alpha/model.safetensors.attestation.json
    s3://attestations/team-beta/model.safetensors.attestation.json
    ```
 
 4. **Policy per environment**: Different Kyverno policies for dev/staging/prod:
+
    ```yaml
    # dev: warn only
    validationFailureAction: Audit
