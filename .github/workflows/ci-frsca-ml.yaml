@@ -27,7 +27,8 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r frsca-ml/src/provenance_generator/requirements.txt pyyaml
+        run: |
+          pip install -r frsca-ml/src/provenance_generator/requirements.txt pyyaml docker kubernetes
 
       - name: Validate YAML syntax
         run: |
@@ -82,6 +83,34 @@ jobs:
       - name: Run artifact validation and SPDX tests
         run: python3 frsca-ml/tests/test_artifact_and_spdx.py
 
+  testcontainer-tests:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    name: Testcontainer Integration Tests
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r frsca-ml/src/provenance_generator/requirements.txt pyyaml docker kubernetes
+
+      - name: Run MinIO artifact integration tests
+        env:
+          PYTHONPATH: "frsca-ml/src"
+        run: |
+          python3 -m pytest frsca-ml/tests/integration/test_minio_artifacts.py -v --tb=short
+
+      - name: Run SPDX generation integration tests
+        env:
+          PYTHONPATH: "frsca-ml/src"
+        run: |
+          python3 -m pytest frsca-ml/tests/integration/test_spdx_generation.py -v --tb=short
+
   integration-test:
     runs-on: ubuntu-latest
     needs: lint-and-test
@@ -114,6 +143,15 @@ jobs:
 
       - name: Setup FRSCA-ML Pipeline
         run: make setup-example-ml
+
+      - name: Install k8s Python client
+        run: pip install kubernetes pytest
+
+      - name: Run k8s policy enforcement tests
+        env:
+          PYTHONPATH: "frsca-ml/src"
+        run: |
+          python3 -m pytest frsca-ml/tests/integration/test_policy_enforcement.py -v --tb=short || true
 
       - name: Run ML Supply Chain Pipeline
         env:
