@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: hf-finetune-pipeline
+spec:
+  description: >-
+    Fine-tunes a Hugging Face model and validates the safetensors artifact.
+
+  workspaces:
+    - name: shared-workspace
+
+  params:
+    - name: model-name
+      type: string
+      default: "distilbert-base-uncased"
+    - name: dataset-name
+      type: string
+      default: "imdb"
+    - name: num-epochs
+      type: string
+      default: "1"
+    - name: context-dir
+      type: string
+      default: "frsca-ml"
+
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+        kind: Task
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: https://github.com/buildsec/frsca
+        - name: revision
+          value: main
+
+    - name: finetune
+      runAfter:
+        - fetch-source
+      taskRef:
+        name: hf-finetune-task
+        kind: Task
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: model-name
+          value: $(params.model-name)
+        - name: dataset-name
+          value: $(params.dataset-name)
+        - name: num-epochs
+          value: $(params.num-epochs)

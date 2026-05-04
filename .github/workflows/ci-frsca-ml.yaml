@@ -79,6 +79,9 @@ jobs:
       - name: Run policy validation tests
         run: python3 frsca-ml/tests/validate_policies.py
 
+      - name: Run artifact validation and SPDX tests
+        run: python3 frsca-ml/tests/test_artifact_and_spdx.py
+
   integration-test:
     runs-on: ubuntu-latest
     needs: lint-and-test

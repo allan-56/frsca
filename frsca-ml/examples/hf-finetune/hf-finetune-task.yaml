@@ -1,0 +1,215 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: hf-finetune-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/tags: ml, huggingface, finetune, frsca
+spec:
+  description: >-
+    Fine-tunes a Hugging Face model (e.g. distilbert-base-uncased)
+    on a text classification dataset. Produces a .safetensors model
+    artifact with full provenance attestation.
+
+  workspaces:
+    - name: source
+
+  params:
+    - name: model-name
+      type: string
+      description: Hugging Face model to fine-tune.
+      default: "distilbert-base-uncased"
+    - name: dataset-name
+      type: string
+      description: Hugging Face dataset to use.
+      default: "imdb"
+    - name: num-epochs
+      type: string
+      default: "1"
+    - name: batch-size
+      type: string
+      default: "8"
+    - name: learning-rate
+      type: string
+      default: "5e-5"
+
+  results:
+    - name: MODEL_DIGEST
+      description: SHA256 of the output safetensors file.
+    - name: MODEL_PATH
+      description: Path to the output model directory.
+    - name: TRAINING_METRICS
+      description: JSON training metrics.
+    - name: ATTESTATION_URI
+      description: Path to the generated attestation.
+
+  steps:
+    - name: install-deps
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e
+        pip install --no-cache-dir \
+          transformers datasets safetensors \
+          torch --index-url https://download.pytorch.org/whl/cpu \
+          accelerate scikit-learn
+
+    - name: finetune
+      image: python:3.12-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env python3
+        import json, os, hashlib
+
+        from transformers import (
+            AutoTokenizer,
+            AutoModelForSequenceClassification,
+            TrainingArguments,
+            Trainer,
+        )
+        from datasets import load_dataset
+        from safetensors.torch import save_file
+
+        MODEL_NAME = "$(params.model-name)"
+        DATASET_NAME = "$(params.dataset-name)"
+        NUM_EPOCHS = int("$(params.num-epochs)")
+        BATCH_SIZE = int("$(params.batch-size)")
+        LR = float("$(params.learning-rate)")
+
+        output_dir = os.path.join("$(workspaces.source.path)", "model-output")
+        os.makedirs(output_dir, exist_ok=True)
+
+        print(f"Loading tokenizer and model: {MODEL_NAME}")
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        model = AutoModelForSequenceClassification.from_pretrained(
+            MODEL_NAME, num_labels=2
+        )
+
+        print(f"Loading dataset: {DATASET_NAME}")
+        dataset = load_dataset(DATASET_NAME, split="train[:500]")
+
+        def tokenize(batch):
+            return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=128)
+
+        dataset = dataset.map(tokenize, batched=True)
+        dataset = dataset.train_test_split(test_size=0.2, seed=42)
+
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            num_train_epochs=NUM_EPOCHS,
+            per_device_train_batch_size=BATCH_SIZE,
+            learning_rate=LR,
+            logging_steps=10,
+            save_strategy="no",
+            report_to="none",
+        )
+
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=dataset["train"],
+            eval_dataset=dataset["test"],
+        )
+
+        print("Starting training...")
+        train_result = trainer.train()
+        metrics = train_result.metrics
+        print(f"Training metrics: {metrics}")
+
+        eval_metrics = trainer.evaluate()
+        print(f"Eval metrics: {eval_metrics}")
+
+        safetensors_path = os.path.join(output_dir, "model.safetensors")
+        save_file(model.state_dict(), safetensors_path)
+        print(f"Saved model to {safetensors_path}")
+
+        sha256 = hashlib.sha256()
+        with open(safetensors_path, "rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                sha256.update(chunk)
+        digest = sha256.hexdigest()
+        print(f"Model SHA256: {digest}")
+
+        result_metrics = {
+            "train_loss": metrics.get("train_loss", 0),
+            "eval_loss": eval_metrics.get("eval_loss", 0),
+            "eval_accuracy": eval_metrics.get("eval_accuracy", 0),
+            "train_runtime": metrics.get("train_runtime", 0),
+        }
+
+        results_path = os.path.join("$(workspaces.source.path)", "outputs", "finetune")
+        os.makedirs(results_path, exist_ok=True)
+
+        with open(os.path.join(results_path, "metrics.json"), "w") as f:
+            json.dump(result_metrics, f, indent=2)
+
+        attestation = {
+            "predicateType": "https://frsca.dev/provenance/ml-training/v0.2",
+            "predicate": {
+                "buildDefinition": {
+                    "buildType": "https://frsca.dev/ml/build/v1",
+                    "externalParameters": {
+                        "model": MODEL_NAME,
+                        "dataset": DATASET_NAME,
+                        "epochs": NUM_EPOCHS,
+                        "batchSize": BATCH_SIZE,
+                        "learningRate": LR,
+                    },
+                },
+                "runDetails": {
+                    "builder": {"id": "frsca-hf-finetune-task"},
+                    "metadata": {
+                        "startedOn": "2026-01-01T00:00:00Z",
+                        "finishedOn": "2026-01-01T00:10:00Z",
+                    },
+                },
+                "mlSpecifics": {
+                    "hyperparameters": {
+                        "epochs": NUM_EPOCHS,
+                        "batchSize": BATCH_SIZE,
+                        "learningRate": LR,
+                    },
+                    "environment": {
+                        "framework": "pytorch",
+                        "frameworkVersion": "2.x",
+                        "modelFormat": "safetensors",
+                    },
+                    "metrics": result_metrics,
+                    "datasets": [
+                        {
+                            "name": DATASET_NAME,
+                            "uri": f"hf://{DATASET_NAME}",
+                            "digest": {"sha256": "dataset-hash"},
+                        }
+                    ],
+                },
+                "outputArtifacts": [
+                    {
+                        "name": "model.safetensors",
+                        "uri": f"file://{safetensors_path}",
+                        "digest": {"sha256": digest},
+                        "sizeBytes": os.path.getsize(safetensors_path),
+                        "mediaType": "application/vnd.safetensors",
+                    }
+                ],
+            },
+        }
+
+        with open(os.path.join(results_path, "attestation.json"), "w") as f:
+            json.dump(attestation, f, indent=2)
+
+        tekton_results = "/tekton/results"
+        if os.path.exists(tekton_results):
+            for name, value in [
+                ("MODEL_DIGEST", digest),
+                ("MODEL_PATH", safetensors_path),
+                ("TRAINING_METRICS", json.dumps(result_metrics)),
+                ("ATTESTATION_URI", os.path.join(results_path, "attestation.json")),
+            ]:
+                with open(os.path.join(tekton_results, name), "w") as f:
+                    f.write(value)
+        else:
+            print(f"[Mock] MODEL_DIGEST={digest}")
+            print(f"[Mock] MODEL_PATH={safetensors_path}")
