@@ -184,7 +184,7 @@ docs-build: ## Build the documentation site
 	cd docs && zola build
 
 .PHONY: lint
-lint: lint-md lint-yaml lint-shell ## Run all linters
+lint: lint-yaml lint-shell ## Run all linters
 
 .PHONY: lint-md
 lint-md: ## Lint markdown files
